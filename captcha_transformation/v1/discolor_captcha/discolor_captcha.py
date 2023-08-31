@@ -2,7 +2,7 @@ import uuid
 from collections import deque
 import cv2
 import numpy as np
-from captcha_transformation.contour.contour import Contour, Pixel
+from captcha_transformation.v1.contour.contour import Contour, Pixel
 from captcha_transformation.values import Color
 
 
