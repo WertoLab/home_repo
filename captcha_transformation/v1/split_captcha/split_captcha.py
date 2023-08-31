@@ -1,7 +1,7 @@
 import numpy
 import numpy as np
 from captcha_transformation.values import Color
-from captcha_transformation.tools.tools import *
+from captcha_transformation.v1.tools.tools import *
 
 
 def split_captcha(image):

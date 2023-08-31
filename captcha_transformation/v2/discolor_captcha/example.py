@@ -1,4 +1,4 @@
-from captcha_transformation.discolor_captcha.discolor_captcha import discolor
+from captcha_transformation.v2.discolor_captcha.discolor_captcha import discolor
 from captcha_transformation.values import Color
 import os
 import cv2

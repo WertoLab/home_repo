@@ -1,7 +1,7 @@
 import os
 import cv2
 from matplotlib import pyplot as plt
-from captcha_transformation.split_captcha.split_captcha import *
+from captcha_transformation.v1.split_captcha.split_captcha import *
 
 YOUR_PATH_DATASET = "split_captcha/datasets"
 YOUR_PATH_SAVE_RESULT = "split_captcha/datasets/result"

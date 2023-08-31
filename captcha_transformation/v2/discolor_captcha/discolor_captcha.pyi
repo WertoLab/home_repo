@@ -1,6 +1,6 @@
 import numpy
 
-from captcha_transformation.contour.contour import Pixel
+from captcha_transformation.v2.contour.contour import Pixel
 from captcha_transformation.values import Color
 
 
