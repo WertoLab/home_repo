@@ -3,9 +3,15 @@ from typing import List
 from fastapi.responses import JSONResponse
 from fastapi import Response
 import json
+from starlette.middleware.cors import CORSMiddleware
+
 from service import Service
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*']
+)
 service = Service()
 
 
