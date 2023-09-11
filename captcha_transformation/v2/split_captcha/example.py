@@ -44,6 +44,12 @@ def save_icon(icon, index_image, index_icon):
                 dpi=300)
     plt.close()
 
+def save_icon_V2(icon, index_image, index_icon):
+    os.makedirs(
+        os.path.dirname(f"{YOUR_PATH_SAVE_RESULT}/icons/{index_image}/"),
+        exist_ok=True)
+    cv2.imwrite(f"{YOUR_PATH_SAVE_RESULT}/icons/{index_image}/{YOUR_NAME_ICON}_{index_icon}.png",
+                icon)
 
 if __name__ == "__main__":
     images=init_dataset()
@@ -52,6 +58,6 @@ if __name__ == "__main__":
         icons = split_icons(img)
         ans = create_icons(image=img, icons=icons)
         for j in range (1,len(ans)+1):
-            save_icon(index_icon=j, index_image=i, icon=ans[j-1])
+            save_icon_V2(index_icon=j, index_image=i, icon=ans[j-1])
         cv2.waitKey(0)
         cv2.destroyAllWindows()
