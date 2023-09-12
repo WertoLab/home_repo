@@ -1,7 +1,7 @@
 import base64
-from preprocess import preprocess_captcha_v2
-from preprocess import preprocess_captcha_v2_business
-from AI_models.ClassificationModel import AlexNet
+from microservice.preprocess import preprocess_captcha_v2
+from microservice.preprocess import preprocess_captcha_v2_business
+from microservice.AI_models.ClassificationModel import AlexNet
 import torch
 import numpy as np
 import cv2
@@ -9,13 +9,16 @@ import pickle
 from torchvision import transforms
 from ultralytics import YOLO
 from sklearn.preprocessing import LabelEncoder
+from microservice.data.filters import RequestSobel, RequestDiscolor, RequestImagesOnly
+
 
 def readb64(encoded_data):
-   nparr = np.frombuffer(base64.b64decode(encoded_data), np.uint8)
-   img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
-   return img
-class Service:
+    nparr = np.frombuffer(encoded_data, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
+    return img
 
+
+class Service:
     def __init__(self):
         pass
 
@@ -54,12 +57,12 @@ class Service:
         return cv2.cvtColor(processed_image, cv2.COLOR_GRAY2BGR)
 
     def detect_v2(self, name, captcha, threshold, model_name):
-        model = YOLO("AI_weights/" + str(model_name))
+        model = YOLO("microservice/AI_weights/" + str(model_name))
         prediction = model.predict(self.sobel_filter(threshold, captcha))
         # cv2.imwrite("sobel.png", self.sobel_filter(threshold, captcha))
         index = 0
         for box in self.get_boxes(prediction):
-            if (model.model.names[int(prediction[0].boxes.cls.cpu()[index])] == name):
+            if model.model.names[int(prediction[0].boxes.cls.cpu()[index])] == name:
                 # int(box[0]), int(box[1]) , int(box[2]), int(box[3])
                 print(box)
                 return (int(box[2]) + int(box[0])) / 2, (int(box[3]) + int(box[1])) / 2
@@ -71,7 +74,7 @@ class Service:
         prediction = model.predict(captcha)
         index = 0
         for box in self.get_boxes(prediction):
-            if (model.model.names[int(prediction[0].boxes.cls.cpu()[index])] == name):
+            if model.model.names[int(prediction[0].boxes.cls.cpu()[index])] == name:
                 # int(box[0]), int(box[1]) , int(box[2]), int(box[3])
                 print(box)
                 return (int(box[2]) + int(box[0])) / 2, (int(box[3]) + int(box[1])) / 2
@@ -95,16 +98,16 @@ class Service:
                         "star", "store_cart", "t-shirt", "ticket", "traffic_light", "umbrella", "water", "wrench"]
         label_encoder = LabelEncoder()
         label_encoder.fit(your_classes)
-        with open("label_encoder.pkl", "wb") as f:
+        with open("microservice/label_encoder.pkl", "wb") as f:
             pickle.dump(label_encoder, f)
 
         # Загрузите вашу обученную модель
         alexnet = AlexNet()
-        alexnet.load_state_dict(torch.load("AI_weights/smartsolver_weights_1_6.pth", map_location='cpu'))
+        alexnet.load_state_dict(torch.load("microservice/AI_weights/smartsolver_weights_1_6.pth", map_location='cpu'))
         alexnet.eval()
 
         # Загрузите label_encoder, если используете его
-        label_encoder = pickle.load(open("label_encoder.pkl", 'rb'))
+        label_encoder = pickle.load(open("microservice/label_encoder.pkl", 'rb'))
         model = alexnet
 
         preprocess = transforms.Compose([
@@ -130,11 +133,11 @@ class Service:
         img_bgr = cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
         return img_bgr
 
-    def get_captcha_solve_sequence_old(self, json: dict):
-        discolored_captcha, icons = preprocess_captcha_v2(self.b64_decode(json.get("screenshot_captcha")),
-                                                          self.b64_decode(json.get("screenshot_icons")))
-        captcha = self.b64_decode(json.get("screenshot_captcha"))
-        copy = captcha
+    def get_captcha_solve_sequence_old(self, request: RequestImagesOnly):
+        captcha = self.b64_decode(request.screenshot_captcha)
+        discolored_captcha, icons = preprocess_captcha_v2(img=captcha.copy(),
+                                                          icons=self.b64_decode(request.screenshot_icons))
+        copy = captcha.copy()
         sequence = []
         index = 1
         for icon in icons:
@@ -160,16 +163,15 @@ class Service:
         # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
         return sequence
 
-    def get_captcha_solve_sequence_sobel(self, json: dict):
-        discolored_captcha, icons = preprocess_captcha_v2(self.b64_decode(json.get("screenshot_captcha")),
-                                                          self.b64_decode(json.get("screenshot_icons")))
-        captcha = self.b64_decode(json.get("screenshot_captcha"))
-        copy = captcha
+    def get_captcha_solve_sequence_sobel(self, request: RequestImagesOnly):
+        captcha = self.b64_decode(request.screenshot_captcha)
+        discolored_captcha, icons = preprocess_captcha_v2(img=captcha.copy(),
+                                                          icons=self.b64_decode(request.screenshot_icons))
+        copy = captcha.copy()
         sequence = []
         index = 1
         for icon in icons:
             name = self.classify_image(icon)
-            # print(name)
             x, y = self.detect_v2(name, captcha, 70, "best_custom.pt")
 
             if (not x is None) and x != "not":
@@ -178,63 +180,40 @@ class Service:
 
             sequence.append({"order": index, "center_coordinates": {"x": x, "y": y}})
             index += 1
-        '''
-        if (json.get("type") == "algorythm_1"):
-            # x, y = self.detect(name, discolored_captcha)
-            cv2.imwrite("/Users/andrey/Desktop/soutions/old_discolor/answer1.png", copy)
-        else:
-            cv2.imwrite("/Users/andrey/Desktop/soutions/sobel/answer.png", copy)
-        '''
         return sequence
 
-    def get_captcha_solve_sequence_old_business(self, json: dict):
-        discolored_captcha, icons = preprocess_captcha_v2_business(self.b64_decode(json.get("screenshot_captcha")),
-                                                                   self.b64_decode(json.get("screenshot_icons")), json)
-        captcha = self.b64_decode(json.get("screenshot_captcha"))
-        copy = captcha
+    def get_captcha_solve_sequence_old_business(self, request: RequestDiscolor):
+        captcha = self.b64_decode(request.screenshot_captcha)
+        discolored_captcha, icons = preprocess_captcha_v2_business(img=captcha,
+                                                                   icons=self.b64_decode(request.screenshot_icons),
+                                                                   filter=request.filter)
+        copy = captcha.copy()
         sequence = []
         index = 1
         for icon in icons:
             name = self.classify_image(icon)
-            print(name)
-            # x, y = self.detect(name, discolored_captcha)
             x, y = self.detect_v1(name, discolored_captcha)
-
             if (x != None and x != "not"):
                 cv2.circle(copy, (int(x), int(y)), 2, (0, 0, 255), 4)
                 cv2.putText(copy, str(index), (int(x) + 5, int(y) + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
             sequence.append({"order": index, "center_coordinates": {"x": x, "y": y}})
             index += 1
-        '''
-        if (json.get("type") == "algorythm_1"):
-            # x, y = self.detect(name, discolored_captcha)
-            cv2.imwrite("/Users/andrey/Desktop/soutions/old_discolor/answer1.png", copy)
-        else:
-            cv2.imwrite("/Users/andrey/Desktop/soutions/sobel/answer.png", copy)
-        '''
-        print(sequence)
-        # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
         b64_string_discolored = base64.b64encode(discolored_captcha).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
-        return sequence, b64_string_discolored, json.get("screenshot_captcha"), json.get(
-            "screenshot_icons"), b64_string_answer
+        return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
 
-    def get_captcha_solve_sequence_sobel_business(self, json: dict):
-        # cv2.imwrite("test.jpg", self.b64_decode(json.get("screenshot_captcha")))
-        # cv2.imwrite("test2.jpg", self.b64_decode(json.get("screenshot_icons")))
-        discolored_captcha, icons = preprocess_captcha_v2(self.b64_decode(json.get("screenshot_captcha")),
-                                                          self.b64_decode(json.get("screenshot_icons")))
-        # cv2.imwrite("preprocesses_captcha" + str(0) + ".png", discolored_captcha)
-        # cv2.imwrite("preprocesses_icons" + str(0) + ".png", icons[4])
-        captcha = self.b64_decode(json.get("screenshot_captcha"))
-        copy = captcha
+    def get_captcha_solve_sequence_sobel_business(self, request: RequestSobel):
+        captcha = self.b64_decode(request.screenshot_captcha)
+        discolored_captcha, icons = preprocess_captcha_v2(img=captcha,
+                                                          icons=self.b64_decode(request.screenshot_icons))
+        copy = captcha.copy()
         sequence = []
         index = 1
         for icon in icons:
             name = self.classify_image(icon)
             print(name)
-            x, y = self.detect_v2(name, captcha, json.get("sobel_filter"), "best_custom.pt")
+            x, y = self.detect_v2(name, captcha, request.filter.value, "best_custom.pt")
 
             if (x != None and x != "not"):
                 cv2.circle(copy, (int(x), int(y)), 2, (0, 0, 255), 4)
@@ -253,5 +232,4 @@ class Service:
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
         # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
-        return sequence, b64_string_discolored, json.get("screenshot_captcha"), json.get(
-            "screenshot_icons"), b64_string_answer
+        return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer

@@ -1,15 +1,14 @@
 from captcha_transformation.v2.discolor_captcha.discolor_captcha import discolor
 from captcha_transformation.v2.split_captcha.split_captcha import split_icons,create_icons
 from captcha_transformation.values import Color
+from microservice.data.filters import DiscolorFilter
 
 
-
-
-def preprocess_captcha_v2_business(img, icons, json: dict):
-    return_img = discolor(image=img, step=json.get("discolor_filter").get("step"),
-                          tol=json.get("discolor_filter").get("tolerance"),
-                          count_contour=json.get("discolor_filter").get("count_contour"), new_tint_icon=Color.WHITE,
-                          blur=True)
+def preprocess_captcha_v2_business(img, icons, filter:DiscolorFilter):
+    return_img = discolor(image=img, step=filter.step,
+                          tol=filter.tolerance,
+                          count_contour=filter.count_contour, new_tint_icon=Color.WHITE,
+                          blur=filter.blur)
     icons_d = split_icons(icons)
     ans = create_icons(image=icons, icons=icons_d)
 
