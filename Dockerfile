@@ -8,6 +8,7 @@ COPY requirements.txt .
 
 RUN pip3 install -r requirements.txt
 
-COPY . .
+COPY microservice .
+COPY captcha_transformation .
 
 CMD gunicorn controller:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind=0.0.0.0:8000 --timeout 600
