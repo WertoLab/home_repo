@@ -1,7 +1,6 @@
 from fastapi import Response, Request
 import json
 from microservice.data.filters import *
-from microservice.sc3 import YOUR_FUN
 
 
 def init_routes(app, service):
