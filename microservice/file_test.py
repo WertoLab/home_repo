@@ -9,15 +9,16 @@ import cv2
 import requests as r
 
 ROOT_PATH = Path(__file__).resolve(strict=True).parent.parent.parent
-
-with open(str('/Users/andrey/Desktop/test_samples/captcha3/image_F5.png'), 'rb') as file:
+YPATHCAPTCHA="/home/anika1d/PycharmWorkProject/captcha_detection/image_F6.png"
+YPATHICONS="/home/anika1d/PycharmWorkProject/captcha_detection/image_I6.png"
+with open(str(YPATHCAPTCHA), 'rb') as file:
     b64_string_captcha = base64.b64encode(file.read()).decode('UTF-8')
 
-with open(str('/Users/andrey/Desktop/test_samples/captcha3/image_I5.png'), 'rb') as file:
+with open(str(YPATHICONS), 'rb') as file:
     b64_string_icons = base64.b64encode(file.read()).decode('UTF-8')
 
-file_old_business = {"screenshot_captcha": b64_string_captcha, "screenshot_icons": b64_string_icons, "discolor_filter": {"step": 2, "tolerance": 6, "count_contour": 1400}}
-file_sobel_business = {"screenshot_captcha": b64_string_captcha, "screenshot_icons": b64_string_icons, "sobel_filter": 70}
+file_old_business = {"screenshot_captcha": b64_string_captcha, "screenshot_icons": b64_string_icons, "filter": {"step": 2, "tolerance": 6, "count_contour": 1400, "blur": True}}
+file_sobel_business = {"screenshot_captcha": b64_string_captcha, "screenshot_icons": b64_string_icons, "filter": { "value":70}}
 file_old_our = {"screenshot_captcha": b64_string_captcha, "screenshot_icons": b64_string_icons}
 file_sobel_our = {"screenshot_captcha": b64_string_captcha, "screenshot_icons": b64_string_icons}
 

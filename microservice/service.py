@@ -128,7 +128,9 @@ class Service:
         return predicted_class
 
     def b64_decode(self, im_b64: str):
-        img = readb64(im_b64).copy()
+        img_bytes = base64.b64decode(im_b64.encode('utf-8'))
+        img = readb64(img_bytes)
+        # img = readb64(im_b64).copy()
         img_arr = np.asarray(img)
         img_bgr = cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
         return img_bgr
