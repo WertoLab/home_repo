@@ -1,4 +1,11 @@
 import base64
+import io
+
+from PIL import Image
+
+
+
+
 from microservice.preprocess import preprocess_captcha_v2
 from microservice.preprocess import preprocess_captcha_v2_business
 from microservice.AI_models.ClassificationModel import AlexNet
@@ -12,10 +19,10 @@ from sklearn.preprocessing import LabelEncoder
 from microservice.data.filters import RequestSobel, RequestDiscolor, RequestImagesOnly
 
 
-def readb64(encoded_data):
-    nparr = np.frombuffer(encoded_data, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
-    return img
+# def readb64(encoded_data):
+#     nparr = np.frombuffer(encoded_data, np.uint8)
+#     img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
+#     return img
 
 
 class Service:
@@ -128,7 +135,9 @@ class Service:
         return predicted_class
 
     def b64_decode(self, im_b64: str):
-        img = readb64(im_b64).copy()
+        img_bytes = base64.b64decode(im_b64.encode('utf-8'))
+        img = Image.open(io.BytesIO(img_bytes))
+        # img = readb64(im_b64).copy()
         img_arr = np.asarray(img)
         img_bgr = cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
         return img_bgr

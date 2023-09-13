@@ -1,6 +1,7 @@
 from fastapi import Response, Request
 import json
 from microservice.data.filters import *
+from microservice.sc3 import YOUR_FUN
 
 
 def init_routes(app, service):
@@ -18,7 +19,9 @@ def init_routes(app, service):
 
     @app.get("/get_captcha_solve_sequence_sobel_our")
     async def get_captcha_solve_sequence(request: Request):
-        rio = RequestImagesOnly.fromJson(await request.json())
+        js=await request.json()
+
+        rio = RequestImagesOnly.fromJson(js)
         return Response(content=json.dumps(service.get_captcha_solve_sequence_sobel(
             request=rio)), media_type='application/json')
 
@@ -34,7 +37,7 @@ def init_routes(app, service):
 
     @app.get("/get_captcha_solve_sequence_sobel_business")
     async def get_captcha_solve_sequence_business(request: Request):
-        rs = RequestSobel.fromJson(request)
+        rs = RequestSobel.fromJson(await request.json())
         sequence, discolored, captcha, icons, answer = service.get_captcha_solve_sequence_sobel_business(
             request=rs)
         return Response(content=json.dumps(
