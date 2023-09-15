@@ -19,8 +19,8 @@ class RequestDiscolor:
             screenshot_icons=json.get("screenshot_icons"),
             filter=DiscolorFilter(step=json.get("filter").get("step"),
                                   count_contour=json.get("filter").get("count_contour"),
-                                  tolerance=json.get("filter").get("value"),
-                                  blur=json.get("filter").get("value"))
+                                  tolerance=json.get("filter").get("tolerance"),
+                                  blur=json.get("filter").get("count_contour"))
         )
 
 
