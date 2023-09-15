@@ -1,4 +1,10 @@
 import base64
+import os
+import shutil
+import uuid
+
+import boto3
+
 from microservice.preprocess import preprocess_captcha_v2
 from microservice.preprocess import preprocess_captcha_v2_business
 from microservice.AI_models.ClassificationModel import AlexNet
@@ -70,7 +76,7 @@ class Service:
         return None, None
 
     def detect_v1(self, name, captcha):
-        model = YOLO("AI_weights/best.pt")
+        model = YOLO("microservice/AI_weights/best.pt")
         prediction = model.predict(captcha)
         index = 0
         for box in self.get_boxes(prediction):
@@ -134,6 +140,51 @@ class Service:
         img_bgr = cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
         return img_bgr
 
+    def put_object_to_s3(self, new_object, content):
+        session = boto3.session.Session()
+        s3 = session.client(
+            service_name='s3',
+            endpoint_url='https://storage.yandexcloud.net',
+            aws_access_key_id='YCAJEPC30tPiNB3wctwCuqNhZ',
+            aws_secret_access_key='YCOCKWm4HIFDBMV4-jNTtTe20QQHAx42NPJkdkI8'
+        )
+        print(content)
+        s3.put_object(Bucket='capchas-bucket', Key=new_object, Body=content,
+                      StorageClass='COLD')
+
+    def get_batch(self):
+        os.mkdir("download_captchas")
+
+        session = boto3.session.Session()
+        s3 = session.client(
+            service_name='s3',
+            endpoint_url='https://storage.yandexcloud.net',
+            aws_access_key_id='YCAJEPC30tPiNB3wctwCuqNhZ',
+            aws_secret_access_key='YCOCKWm4HIFDBMV4-jNTtTe20QQHAx42NPJkdkI8'
+        )
+
+        for key in s3.list_objects(Bucket='capchas-bucket')['Contents']:
+            print(key['Key'])
+            get_object_response = s3.get_object(Bucket='capchas-bucket', Key=key['Key'])
+
+            with open("download_captchas/" + key['Key'].split("/")[-1][:-4] + ".png", "wb") as fh:
+                fh.write(base64.decodebytes(get_object_response['Body'].read()))
+        shutil.make_archive('captchas', 'zip', 'download_captchas')
+        shutil.rmtree("download_captchas")
+
+    def delete_captchas(self):
+        session = boto3.session.Session()
+        s3 = session.client(
+            service_name='s3',
+            endpoint_url='https://storage.yandexcloud.net',
+            aws_access_key_id='YCAJEPC30tPiNB3wctwCuqNhZ',
+            aws_secret_access_key='YCOCKWm4HIFDBMV4-jNTtTe20QQHAx42NPJkdkI8'
+        )
+        objects = s3.list_objects(Bucket='capchas-bucket', Prefix='captchas/')
+        for object in objects['Contents']:
+            s3.delete_object(Bucket='capchas-bucket', Key=object['Key'])
+        return {"stutus": "deleted"}
+
     def get_captcha_solve_sequence_old(self, request: RequestImagesOnly):
         captcha = self.b64_decode(request.screenshot_captcha)
         discolored_captcha, icons = preprocess_captcha_v2(img=captcha.copy(),
@@ -191,6 +242,8 @@ class Service:
         copy = captcha.copy()
         sequence = []
         index = 1
+        detected_objects = 0
+        captcha_id = str(uuid.uuid4())
         for icon in icons:
             name = self.classify_image(icon)
             x, y = self.detect_v1(name, discolored_captcha)
@@ -200,6 +253,14 @@ class Service:
 
             sequence.append({"order": index, "center_coordinates": {"x": x, "y": y}})
             index += 1
+        if (detected_objects != index - 1):
+            os.mkdir("captchas")
+            print("saved")
+            cv2.imwrite("captchas/" + captcha_id + ".png", self.b64_decode(request.screenshot_captcha))
+            with open(str("captchas/" + captcha_id + ".png"), 'rb') as file:
+                b64_string_captcha = base64.b64encode(file.read()).decode('UTF-8')
+            self.put_object_to_s3("captchas/" + captcha_id + ".txt", b64_string_captcha)
+            shutil.rmtree("captchas")
         b64_string_discolored = base64.b64encode(discolored_captcha).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
         return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
@@ -211,6 +272,8 @@ class Service:
         copy = captcha.copy()
         sequence = []
         index = 1
+        detected_objects = 0
+        captcha_id = str(uuid.uuid4())
         for icon in icons:
             name = self.classify_image(icon)
             print(name)
@@ -229,6 +292,14 @@ class Service:
         else:
             cv2.imwrite("/Users/andrey/Desktop/soutions/sobel/answer.png", copy)
         '''
+        if (detected_objects != index - 1):
+            os.mkdir("captchas")
+            print("saved")
+            cv2.imwrite("captchas/" + captcha_id + ".png", self.b64_decode(request.screenshot_captcha))
+            with open(str("captchas/" + captcha_id + ".png"), 'rb') as file:
+                b64_string_captcha = base64.b64encode(file.read()).decode('UTF-8')
+            self.put_object_to_s3("captchas/" + captcha_id + ".txt", b64_string_captcha)
+            shutil.rmtree("captchas")
         # print(sequence)
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')

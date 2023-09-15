@@ -1,5 +1,8 @@
 from fastapi import Response, Request
 import json
+
+from starlette.responses import FileResponse
+
 from microservice.data.filters import *
 
 
@@ -42,3 +45,15 @@ def init_routes(app, service):
         return Response(content=json.dumps(
             {"coordinate_sequence": sequence, "discolored_captcha": discolored, "captcha": captcha, "icons": icons,
              "answer": answer}), media_type='application/json')
+
+    @app.get("/get_unresolved_captchas")
+    async def get_unresolved_captchas():
+        service.get_batch()
+        file_path = 'captchas.zip'
+        return FileResponse(path=file_path, filename=file_path, media_type='text/mp4')
+        # return {"ok": "ok"}
+
+    @app.get("/delete_captchas")
+    async def get_unresolved_captchas():
+        return Response(content=json.dumps(service.delete_captchas()),
+                        media_type='application/json')
