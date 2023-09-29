@@ -57,3 +57,20 @@ def init_routes(app, service):
     async def get_unresolved_captchas():
         return Response(content=json.dumps(service.delete_captchas()),
                         media_type='application/json')
+
+    @app.get("/get_captcha_solve_sequence_segmentation_our")
+    async def get_captcha_solve_sequence(request: Request):
+        rio = RequestSobel.fromJson(await request.json())
+        return Response(content=json.dumps(service.get_captcha_solve_sequence_segmentation_sobel(
+            request=rio
+        )), media_type='application/json')
+
+    @app.get("/get_captcha_solve_sequence_hybrid")
+    async def get_captcha_solve_sequence(request: Request):
+        rio = RequestSobel.fromJson(await request.json())
+        return Response(content=json.dumps(service.get_captcha_solve_sequence_hybrid(
+            request=rio
+        )), media_type='application/json')
+
+
+

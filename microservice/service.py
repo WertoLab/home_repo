@@ -148,7 +148,7 @@ class Service:
             aws_access_key_id='YCAJEPC30tPiNB3wctwCuqNhZ',
             aws_secret_access_key='YCOCKWm4HIFDBMV4-jNTtTe20QQHAx42NPJkdkI8'
         )
-        print(content)
+        #print(content)
         s3.put_object(Bucket='capchas-bucket', Key=new_object, Body=content,
                       StorageClass='COLD')
 
@@ -285,6 +285,7 @@ class Service:
 
             sequence.append({"order": index, "center_coordinates": {"x": x, "y": y}})
             index += 1
+
         '''
         if (json.get("type") == "algorythm_1"):
             # x, y = self.detect(name, discolored_captcha)
@@ -303,5 +304,95 @@ class Service:
         # print(sequence)
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
+        cv2.imwrite("answer.png", copy)
+        # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
+        return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
+
+    def get_captcha_solve_sequence_segmentation_sobel(self, request: RequestSobel):
+        captcha = self.b64_decode(request.screenshot_captcha)
+        discolored_captcha, icons = preprocess_captcha_v2(img=captcha,
+                                                          icons=self.b64_decode(request.screenshot_icons))
+        copy = captcha.copy()
+        sequence = []
+        index = 1
+        detected_objects = 0
+        captcha_id = str(uuid.uuid4())
+        for icon in icons:
+            name = self.classify_image(icon)
+            print(name)
+            x, y = self.detect_v2(name, captcha, request.filter.value, "captcha_segmentation.pt")
+
+            if (x != None and x != "not"):
+                cv2.circle(copy, (int(x), int(y)), 2, (0, 0, 255), 4)
+                cv2.putText(copy, str(index), (int(x) + 5, int(y) + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+            sequence.append({"order": index, "center_coordinates": {"x": x, "y": y}})
+            index += 1
+        '''
+        if (json.get("type") == "algorythm_1"):
+            # x, y = self.detect(name, discolored_captcha)
+            cv2.imwrite("/Users/andrey/Desktop/soutions/old_discolor/answer1.png", copy)
+        else:
+            cv2.imwrite("/Users/andrey/Desktop/soutions/sobel/answer.png", copy)
+        '''
+        if (detected_objects != index - 1):
+            os.mkdir("captchas")
+            print("saved")
+            cv2.imwrite("captchas/" + captcha_id + ".png", self.b64_decode(request.screenshot_captcha))
+            with open(str("captchas/" + captcha_id + ".png"), 'rb') as file:
+                b64_string_captcha = base64.b64encode(file.read()).decode('UTF-8')
+            self.put_object_to_s3("captchas/" + captcha_id + ".txt", b64_string_captcha)
+            shutil.rmtree("captchas")
+        # print(sequence)
+        b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
+        b64_string_answer = base64.b64encode(copy).decode('UTF-8')
+        cv2.imwrite("answer.png", copy)
+        # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
+        return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
+
+
+    def get_captcha_solve_sequence_hybrid(self, request: RequestSobel):
+        captcha = self.b64_decode(request.screenshot_captcha)
+        discolored_captcha, icons = preprocess_captcha_v2(img=captcha,
+                                                          icons=self.b64_decode(request.screenshot_icons))
+        copy = captcha.copy()
+        sequence = []
+        index = 1
+        detected_objects = 0
+        captcha_id = str(uuid.uuid4())
+        for icon in icons:
+            name = self.classify_image(icon)
+            print(name)
+            x, y = self.detect_v2(name, captcha, request.filter.value, "best_v2.pt")
+
+            if (x != None and x != "not"):
+                cv2.circle(copy, (int(x), int(y)), 2, (0, 0, 255), 4)
+                cv2.putText(copy, str(index), (int(x) + 5, int(y) + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+            sequence.append({"order": index, "center_coordinates": {"x": x, "y": y}})
+            index += 1
+        '''
+        if (json.get("type") == "algorythm_1"):
+            # x, y = self.detect(name, discolored_captcha)
+            cv2.imwrite("/Users/andrey/Desktop/soutions/old_discolor/answer1.png", copy)
+        else:
+            cv2.imwrite("/Users/andrey/Desktop/soutions/sobel/answer.png", copy)
+        '''
+        if (detected_objects != index - 1):
+            '''
+            os.mkdir("captchas")
+            print("saved")
+            cv2.imwrite("captchas/" + captcha_id + ".png", self.b64_decode(request.screenshot_captcha))
+            with open(str("captchas/" + captcha_id + ".png"), 'rb') as file:
+                b64_string_captcha = base64.b64encode(file.read()).decode('UTF-8')
+            self.put_object_to_s3("captchas/" + captcha_id + ".txt", b64_string_captcha)
+            shutil.rmtree("captchas")
+            '''
+            return self.get_captcha_solve_sequence_segmentation_sobel(request)
+
+        # print(sequence)
+        b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
+        b64_string_answer = base64.b64encode(copy).decode('UTF-8')
+        cv2.imwrite("answer.png", copy)
         # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
         return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
