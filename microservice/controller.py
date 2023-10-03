@@ -72,5 +72,14 @@ def init_routes(app, service):
             request=rio
         )), media_type='application/json')
 
+    @app.get("/get_captcha_solve_sequence_hybrid_merge")
+    async def get_captcha_solve_sequence(request: Request):
+        rio = RequestSobel.fromJson(await request.json())
+        sequence, discolored, captcha, icons, answer = service.get_captcha_solve_sequence_hybrid_merge(request=rio)
+        return Response(content=json.dumps({"status":1,"request":sequence}), media_type='application/json')
 
-
+    @app.get("/get_captcha_solve_sequence_hybrid_merge_business")
+    async def get_captcha_solve_sequence(request: Request):
+        rio = RequestBusiness.fromJson(await request.json())
+        sequence, discolored, captcha, icons, answer = service.get_captcha_solve_sequence_hybrid_merge_business(request=rio)
+        return Response(content=json.dumps({"status":1,"request":sequence}), media_type='application/json')

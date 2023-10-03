@@ -15,7 +15,7 @@ import pickle
 from torchvision import transforms
 from ultralytics import YOLO
 from sklearn.preprocessing import LabelEncoder
-from microservice.data.filters import RequestSobel, RequestDiscolor, RequestImagesOnly
+from microservice.data.filters import RequestSobel, RequestDiscolor, RequestImagesOnly, RequestBusiness
 
 
 def readb64(encoded_data):
@@ -277,7 +277,7 @@ class Service:
         for icon in icons:
             name = self.classify_image(icon)
             print(name)
-            x, y = self.detect_v2(name, captcha, request.filter.value, "best_custom.pt")
+            x, y = self.detect_v2(name, captcha, request.filter.value, "best_v3.pt")
 
             if (x != None and x != "not"):
                 cv2.circle(copy, (int(x), int(y)), 2, (0, 0, 255), 4)
@@ -308,7 +308,7 @@ class Service:
         # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
         return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
 
-    def get_captcha_solve_sequence_segmentation_sobel(self, request: RequestSobel):
+    def get_captcha_solve_sequence_segmentation_sobel(self, request: RequestBusiness):
         captcha = self.b64_decode(request.screenshot_captcha)
         discolored_captcha, icons = preprocess_captcha_v2(img=captcha,
                                                           icons=self.b64_decode(request.screenshot_icons))
@@ -320,13 +320,13 @@ class Service:
         for icon in icons:
             name = self.classify_image(icon)
             print(name)
-            x, y = self.detect_v2(name, captcha, request.filter.value, "captcha_segmentation.pt")
+            x, y = self.detect_v2(name, captcha, 70, "captcha_segmentation.pt")
 
             if (x != None and x != "not"):
                 cv2.circle(copy, (int(x), int(y)), 2, (0, 0, 255), 4)
                 cv2.putText(copy, str(index), (int(x) + 5, int(y) + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-            sequence.append({"order": index, "center_coordinates": {"x": x, "y": y}})
+            sequence.append({"x": x, "y": y})
             index += 1
         '''
         if (json.get("type") == "algorythm_1"):
@@ -396,3 +396,106 @@ class Service:
         cv2.imwrite("answer.png", copy)
         # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
         return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
+
+    def get_captcha_solve_sequence_hybrid_merge(self, request: RequestSobel):
+        captcha = self.b64_decode(request.screenshot_captcha)
+        discolored_captcha, icons = preprocess_captcha_v2(img=captcha,
+                                                          icons=self.b64_decode(request.screenshot_icons))
+        copy = captcha.copy()
+        sequence = []
+        index = 1
+        detected_objects = 0
+        captcha_id = str(uuid.uuid4())
+        for icon in icons:
+            name = self.classify_image(icon)
+            print(name)
+            x, y = self.detect_v2(name, captcha, request.filter.value, "best_custom.pt")
+
+            sequence.append({"x": x, "y": y})
+            index += 1
+        '''
+        if (json.get("type") == "algorythm_1"):
+            # x, y = self.detect(name, discolored_captcha)
+            cv2.imwrite("/Users/andrey/Desktop/soutions/old_discolor/answer1.png", copy)
+        else:
+            cv2.imwrite("/Users/andrey/Desktop/soutions/sobel/answer.png", copy)
+        '''
+        final_sequence = []
+
+        segment = self.get_captcha_solve_sequence_segmentation_sobel(request)[0]
+
+        for i in range(5):
+            if(segment[i].get("x") == None and sequence[i].get("x") != None):
+                final_sequence.append(sequence[i])
+            elif(segment[i].get("x") != None and sequence[i].get("x") == None):
+                final_sequence.append(segment[i])
+            else:
+                final_sequence.append(segment[i])
+        for i in range(5):
+            #print(final_sequence[i])
+            #print(segment[i])
+            #print(sequence[i])
+            print(final_sequence[i])
+            #print(i)
+            if (final_sequence[i].get("x") != None):
+                cv2.circle(copy, (int(final_sequence[i].get("x")), int(final_sequence[i].get("y"))), 2, (0, 0, 255), 4)
+                cv2.putText(copy, str(i+1), (int(final_sequence[i].get("x")) + 5, int(final_sequence[i].get("y")) + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        # print(sequence)
+        b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
+        b64_string_answer = base64.b64encode(copy).decode('UTF-8')
+        cv2.imwrite("answer.png", copy)
+        # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
+        return final_sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
+
+
+
+    def get_captcha_solve_sequence_hybrid_merge_business(self, request: RequestBusiness):
+        captcha = self.b64_decode(request.screenshot_captcha)
+        discolored_captcha, icons = preprocess_captcha_v2(img=captcha,
+                                                          icons=self.b64_decode(request.screenshot_icons))
+        copy = captcha.copy()
+        sequence = []
+        index = 1
+        detected_objects = 0
+        captcha_id = str(uuid.uuid4())
+        for icon in icons:
+            name = self.classify_image(icon)
+            print(name)
+            x, y = self.detect_v2(name, captcha, 70, "best_custom.pt")
+
+            sequence.append({"x": x, "y": y})
+            index += 1
+        '''
+        if (json.get("type") == "algorythm_1"):
+            # x, y = self.detect(name, discolored_captcha)
+            cv2.imwrite("/Users/andrey/Desktop/soutions/old_discolor/answer1.png", copy)
+        else:
+            cv2.imwrite("/Users/andrey/Desktop/soutions/sobel/answer.png", copy)
+        '''
+        final_sequence = []
+
+        segment = self.get_captcha_solve_sequence_segmentation_sobel(request)[0]
+
+        for i in range(5):
+            if(segment[i].get("x") == None and sequence[i].get("x") != None):
+                final_sequence.append(sequence[i])
+            elif(segment[i].get("x") != None and sequence[i].get("x") == None):
+                final_sequence.append(segment[i])
+            else:
+                final_sequence.append(segment[i])
+        for i in range(5):
+            #print(final_sequence[i])
+            #print(segment[i])
+            #print(sequence[i])
+            print(final_sequence[i])
+            #print(i)
+            if (final_sequence[i].get("x") != None):
+                cv2.circle(copy, (int(final_sequence[i].get("x")), int(final_sequence[i].get("y"))), 2, (0, 0, 255), 4)
+                cv2.putText(copy, str(i+1), (int(final_sequence[i].get("x")) + 5, int(final_sequence[i].get("y")) + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        # print(sequence)
+        b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
+        b64_string_answer = base64.b64encode(copy).decode('UTF-8')
+        cv2.imwrite("answer.png", copy)
+        # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
+        return final_sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
+
