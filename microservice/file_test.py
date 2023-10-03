@@ -28,7 +28,8 @@ file_business = {
   "body": b64_string_captcha,
   "imginstructions": b64_string_icons,
   "textinstructions": "Кликните в таком порядке | Click in the following order",
-  "json":1
+  "json":1,
+  "sobel_filter":70
 }
 data = json.dumps(file_business)
 
