@@ -409,7 +409,7 @@ class Service:
         for icon in icons:
             name = self.classify_image(icon)
             print(name)
-            x, y = self.detect_v2(name, captcha, request.filter.value, "best_custom.pt")
+            x, y = self.detect_v2(name, captcha, request.filter.value, "best_v3.pt")
 
             sequence.append({"x": x, "y": y})
             index += 1
@@ -461,7 +461,7 @@ class Service:
         for icon in icons:
             name = self.classify_image(icon)
             print(name)
-            x, y = self.detect_v2(name, captcha, 70, "best_custom.pt")
+            x, y = self.detect_v2(name, captcha, 70, "best_v3.pt")
 
             sequence.append({"x": x, "y": y})
             index += 1
