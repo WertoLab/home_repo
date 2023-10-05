@@ -204,13 +204,7 @@ class Service:
 
             sequence.append({"order": index, "center_coordinates": {"x": x, "y": y}})
             index += 1
-        '''
-        if (json.get("type") == "algorythm_1"):
-            # x, y = self.detect(name, discolored_captcha)
-            cv2.imwrite("/Users/andrey/Desktop/soutions/old_discolor/answer1.png", copy)
-        else:
-            cv2.imwrite("/Users/andrey/Desktop/soutions/sobel/answer.png", copy)
-        '''
+
         # print(sequence)
         # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
         return sequence
@@ -286,13 +280,6 @@ class Service:
             sequence.append({"order": index, "center_coordinates": {"x": x, "y": y}})
             index += 1
 
-        '''
-        if (json.get("type") == "algorythm_1"):
-            # x, y = self.detect(name, discolored_captcha)
-            cv2.imwrite("/Users/andrey/Desktop/soutions/old_discolor/answer1.png", copy)
-        else:
-            cv2.imwrite("/Users/andrey/Desktop/soutions/sobel/answer.png", copy)
-        '''
         if (detected_objects != index - 1):
             os.mkdir("captchas")
             print("saved")
@@ -307,6 +294,7 @@ class Service:
         cv2.imwrite("answer.png", copy)
         # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
         return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
+
 
     def get_captcha_solve_sequence_segmentation_sobel(self, request: RequestBusiness):
         captcha = self.b64_decode(request.screenshot_captcha)
@@ -328,13 +316,7 @@ class Service:
 
             sequence.append({"x": x, "y": y})
             index += 1
-        '''
-        if (json.get("type") == "algorythm_1"):
-            # x, y = self.detect(name, discolored_captcha)
-            cv2.imwrite("/Users/andrey/Desktop/soutions/old_discolor/answer1.png", copy)
-        else:
-            cv2.imwrite("/Users/andrey/Desktop/soutions/sobel/answer.png", copy)
-        '''
+
         if (detected_objects != index - 1):
             os.mkdir("captchas")
             print("saved")
@@ -358,8 +340,7 @@ class Service:
         copy = captcha.copy()
         sequence = []
         index = 1
-        detected_objects = 0
-        captcha_id = str(uuid.uuid4())
+
         for icon in icons:
             name = self.classify_image(icon)
             print(name)
@@ -371,26 +352,7 @@ class Service:
 
             sequence.append({"order": index, "center_coordinates": {"x": x, "y": y}})
             index += 1
-        '''
-        if (json.get("type") == "algorythm_1"):
-            # x, y = self.detect(name, discolored_captcha)
-            cv2.imwrite("/Users/andrey/Desktop/soutions/old_discolor/answer1.png", copy)
-        else:
-            cv2.imwrite("/Users/andrey/Desktop/soutions/sobel/answer.png", copy)
-        '''
-        if (detected_objects != index - 1):
-            '''
-            os.mkdir("captchas")
-            print("saved")
-            cv2.imwrite("captchas/" + captcha_id + ".png", self.b64_decode(request.screenshot_captcha))
-            with open(str("captchas/" + captcha_id + ".png"), 'rb') as file:
-                b64_string_captcha = base64.b64encode(file.read()).decode('UTF-8')
-            self.put_object_to_s3("captchas/" + captcha_id + ".txt", b64_string_captcha)
-            shutil.rmtree("captchas")
-            '''
-            return self.get_captcha_solve_sequence_segmentation_sobel(request)
 
-        # print(sequence)
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
         cv2.imwrite("answer.png", copy)
@@ -404,8 +366,7 @@ class Service:
         copy = captcha.copy()
         sequence = []
         index = 1
-        detected_objects = 0
-        captcha_id = str(uuid.uuid4())
+
         for icon in icons:
             name = self.classify_image(icon)
             print(name)
@@ -413,13 +374,7 @@ class Service:
 
             sequence.append({"x": x, "y": y})
             index += 1
-        '''
-        if (json.get("type") == "algorythm_1"):
-            # x, y = self.detect(name, discolored_captcha)
-            cv2.imwrite("/Users/andrey/Desktop/soutions/old_discolor/answer1.png", copy)
-        else:
-            cv2.imwrite("/Users/andrey/Desktop/soutions/sobel/answer.png", copy)
-        '''
+
         final_sequence = []
 
         segment = self.get_captcha_solve_sequence_segmentation_sobel(request)[0]
@@ -432,11 +387,8 @@ class Service:
             else:
                 final_sequence.append(segment[i])
         for i in range(5):
-            #print(final_sequence[i])
-            #print(segment[i])
-            #print(sequence[i])
+
             print(final_sequence[i])
-            #print(i)
             if (final_sequence[i].get("x") != None):
                 cv2.circle(copy, (int(final_sequence[i].get("x")), int(final_sequence[i].get("y"))), 2, (0, 0, 255), 4)
                 cv2.putText(copy, str(i+1), (int(final_sequence[i].get("x")) + 5, int(final_sequence[i].get("y")) + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
@@ -465,13 +417,7 @@ class Service:
 
             sequence.append({"x": x, "y": y})
             index += 1
-        '''
-        if (json.get("type") == "algorythm_1"):
-            # x, y = self.detect(name, discolored_captcha)
-            cv2.imwrite("/Users/andrey/Desktop/soutions/old_discolor/answer1.png", copy)
-        else:
-            cv2.imwrite("/Users/andrey/Desktop/soutions/sobel/answer.png", copy)
-        '''
+
         final_sequence = []
 
         segment = self.get_captcha_solve_sequence_segmentation_sobel(request)[0]
@@ -498,4 +444,3 @@ class Service:
         cv2.imwrite("answer.png", copy)
         # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
         return final_sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
-
