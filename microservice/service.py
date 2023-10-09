@@ -417,7 +417,6 @@ class Service:
         final_sequence = []
 
         segment = self.get_captcha_solve_sequence_segmentation_sobel(request)[0]
-
         for i in range(5):
             if(segment[i].get("x") == None and sequence[i].get("x") != None):
                 final_sequence.append(sequence[i])
