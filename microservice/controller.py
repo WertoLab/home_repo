@@ -37,6 +37,7 @@ def init_routes(app, service):
              "answer": answer}),
             media_type='application/json')
 
+
     @app.get("/get_captcha_solve_sequence_sobel_business")
     async def get_captcha_solve_sequence_business(request: Request):
         rs = RequestSobel.fromJson(await request.json())
