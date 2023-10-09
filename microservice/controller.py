@@ -43,6 +43,7 @@ def init_routes(app, service):
         rs = RequestSobel.fromJson(await request.json())
         sequence, discolored, captcha, icons, answer = service.get_captcha_solve_sequence_sobel_business(
             request=rs)
+
         return Response(content=json.dumps(
             {"coordinate_sequence": sequence, "discolored_captcha": discolored, "captcha": captcha, "icons": icons,
              "answer": answer}), media_type='application/json')
