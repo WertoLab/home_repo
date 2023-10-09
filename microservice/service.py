@@ -50,8 +50,8 @@ class Service:
 
         for i in range(0, rows - 2):
             for j in range(0, columns - 2):
-                v = np.sum(np.sum(G_x * img[i:i + 3, j:j + 3]))  # vertical
-                h = np.sum(np.sum(G_y * img[i:i + 3, j:j + 3]))  # horizon
+                v = np.sum(np.sum(G_x * img[i:i + 3, j:j + 3]))
+                h = np.sum(np.sum(G_y * img[i:i + 3, j:j + 3]))
                 mag[i + 1, j + 1] = np.sqrt((v ** 2) + (h ** 2))
 
         for p in range(0, rows):
@@ -107,12 +107,11 @@ class Service:
         with open("microservice/label_encoder.pkl", "wb") as f:
             pickle.dump(label_encoder, f)
 
-        # Загрузите вашу обученную модель
         alexnet = AlexNet()
         alexnet.load_state_dict(torch.load("microservice/AI_weights/smartsolver_weights_1_6.pth", map_location='cpu'))
         alexnet.eval()
 
-        # Загрузите label_encoder, если используете его
+
         label_encoder = pickle.load(open("microservice/label_encoder.pkl", 'rb'))
         model = alexnet
 
@@ -125,7 +124,7 @@ class Service:
         input_tensor = preprocess(image_input).unsqueeze(0)
         probs = self.predict_one_sample(model, input_tensor)
         predicted_class_idx = np.argmax(probs, axis=1)[0]
-        # print(predicted_class_idx)
+
         if label_encoder:
             predicted_class = label_encoder.classes_[predicted_class_idx]
         else:
@@ -148,7 +147,7 @@ class Service:
             aws_access_key_id='YCAJEPC30tPiNB3wctwCuqNhZ',
             aws_secret_access_key='YCOCKWm4HIFDBMV4-jNTtTe20QQHAx42NPJkdkI8'
         )
-        #print(content)
+
         s3.put_object(Bucket='capchas-bucket', Key=new_object, Body=content,
                       StorageClass='COLD')
 
@@ -205,8 +204,6 @@ class Service:
             sequence.append({"order": index, "center_coordinates": {"x": x, "y": y}})
             index += 1
 
-        # print(sequence)
-        # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
         return sequence
 
     def get_captcha_solve_sequence_sobel(self, request: RequestImagesOnly):
@@ -270,7 +267,7 @@ class Service:
         captcha_id = str(uuid.uuid4())
         for icon in icons:
             name = self.classify_image(icon)
-            print(name)
+
             x, y = self.detect_v2(name, captcha, request.filter.value, "best_v3.pt")
 
             if (x != None and x != "not"):
@@ -288,11 +285,11 @@ class Service:
                 b64_string_captcha = base64.b64encode(file.read()).decode('UTF-8')
             self.put_object_to_s3("captchas/" + captcha_id + ".txt", b64_string_captcha)
             shutil.rmtree("captchas")
-        # print(sequence)
+
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
         cv2.imwrite("answer.png", copy)
-        # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
+
         return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
 
 
@@ -307,7 +304,7 @@ class Service:
         captcha_id = str(uuid.uuid4())
         for icon in icons:
             name = self.classify_image(icon)
-            print(name)
+
             x, y = self.detect_v2(name, captcha, 70, "captcha_segmentation.pt")
 
             if (x != None and x != "not"):
@@ -325,11 +322,11 @@ class Service:
                 b64_string_captcha = base64.b64encode(file.read()).decode('UTF-8')
             self.put_object_to_s3("captchas/" + captcha_id + ".txt", b64_string_captcha)
             shutil.rmtree("captchas")
-        # print(sequence)
+
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
         cv2.imwrite("answer.png", copy)
-        # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
+
         return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
 
 
@@ -343,7 +340,7 @@ class Service:
 
         for icon in icons:
             name = self.classify_image(icon)
-            print(name)
+
             x, y = self.detect_v2(name, captcha, request.filter.value, "best_v2.pt")
 
             if (x != None and x != "not"):
@@ -356,7 +353,7 @@ class Service:
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
         cv2.imwrite("answer.png", copy)
-        # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
+
         return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
 
     def get_captcha_solve_sequence_hybrid_merge(self, request: RequestSobel):
@@ -369,7 +366,7 @@ class Service:
 
         for icon in icons:
             name = self.classify_image(icon)
-            print(name)
+
             x, y = self.detect_v2(name, captcha, request.filter.value, "best_v3.pt")
 
             sequence.append({"x": x, "y": y})
@@ -392,11 +389,10 @@ class Service:
             if (final_sequence[i].get("x") != None):
                 cv2.circle(copy, (int(final_sequence[i].get("x")), int(final_sequence[i].get("y"))), 2, (0, 0, 255), 4)
                 cv2.putText(copy, str(i+1), (int(final_sequence[i].get("x")) + 5, int(final_sequence[i].get("y")) + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        # print(sequence)
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
         cv2.imwrite("answer.png", copy)
-        # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
+
         return final_sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
 
 
@@ -412,7 +408,7 @@ class Service:
         captcha_id = str(uuid.uuid4())
         for icon in icons:
             name = self.classify_image(icon)
-            print(name)
+
             x, y = self.detect_v2(name, captcha, 70, "best_v3.pt")
 
             sequence.append({"x": x, "y": y})
@@ -430,17 +426,12 @@ class Service:
             else:
                 final_sequence.append(segment[i])
         for i in range(5):
-            #print(final_sequence[i])
-            #print(segment[i])
-            #print(sequence[i])
             print(final_sequence[i])
-            #print(i)
+
             if (final_sequence[i].get("x") != None):
                 cv2.circle(copy, (int(final_sequence[i].get("x")), int(final_sequence[i].get("y"))), 2, (0, 0, 255), 4)
                 cv2.putText(copy, str(i+1), (int(final_sequence[i].get("x")) + 5, int(final_sequence[i].get("y")) + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        # print(sequence)
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
         cv2.imwrite("answer.png", copy)
-        # print(self.detect("face", cv2.imread("preprocesses_captcha0.png")))
         return final_sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
