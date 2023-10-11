@@ -415,22 +415,25 @@ class Service:
             index += 1
 
         final_sequence = []
-
+        error = False
         segment = self.get_captcha_solve_sequence_segmentation_sobel(request)[0]
-        for i in range(5):
+        for i in range(len(sequence)):
             if(segment[i].get("x") == None and sequence[i].get("x") != None):
                 final_sequence.append(sequence[i])
             elif(segment[i].get("x") != None and sequence[i].get("x") == None):
                 final_sequence.append(segment[i])
             else:
                 final_sequence.append(segment[i])
-        for i in range(5):
+        for i in range(len(sequence)):
             print(final_sequence[i])
-
+            if(final_sequence[i].get("x") == None):
+                error = True
             if (final_sequence[i].get("x") != None):
                 cv2.circle(copy, (int(final_sequence[i].get("x")), int(final_sequence[i].get("y"))), 2, (0, 0, 255), 4)
                 cv2.putText(copy, str(i+1), (int(final_sequence[i].get("x")) + 5, int(final_sequence[i].get("y")) + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
         cv2.imwrite("answer.png", copy)
+        if(error == True):
+            return error
         return final_sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer

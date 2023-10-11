@@ -9,8 +9,8 @@ import cv2
 import requests as r
 
 ROOT_PATH = Path(__file__).resolve(strict=True).parent.parent.parent
-YPATHCAPTCHA="/Users/andrey/Downloads/sotka/image_028.png"#9
-YPATHICONS="/Users/andrey/Downloads/sotka/5028.png"
+YPATHCAPTCHA="/Users/andrey/Downloads/sotka/image_001.png"#9
+YPATHICONS="/Users/andrey/Downloads/sotka/5001.png"
 with open(str(YPATHCAPTCHA), 'rb') as file:
     b64_string_captcha = base64.b64encode(file.read()).decode('UTF-8')
 

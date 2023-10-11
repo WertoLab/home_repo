@@ -83,5 +83,7 @@ def init_routes(app, service):
     @app.get("/get_captcha_solve_sequence_hybrid_merge_business")
     async def get_captcha_solve_sequence(request: Request):
         rio = RequestBusiness.fromJson(await request.json())
+        if(service.get_captcha_solve_sequence_hybrid_merge_business(request=rio) == True):
+            return Response(content=json.dumps({"status": 0, "error": "Not detected whole captcha"}), media_type='application/json')
         sequence, discolored, captcha, icons, answer = service.get_captcha_solve_sequence_hybrid_merge_business(request=rio)
-        return Response(content=json.dumps({"status":1,"request":sequence}), media_type='application/json')
+        return Response(content=json.dumps({"status": 1, "request": sequence}), media_type='application/json')
