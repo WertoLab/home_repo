@@ -9,8 +9,8 @@ import cv2
 import requests as r
 
 ROOT_PATH = Path(__file__).resolve(strict=True).parent.parent.parent
-YPATHCAPTCHA="/Users/andrey/Downloads/sotka/image_001.png"#9
-YPATHICONS="/Users/andrey/Downloads/sotka/5001.png"
+YPATHCAPTCHA="/Users/andrey/Downloads/sotka/image_025.png"#9
+YPATHICONS="/Users/andrey/Downloads/sotka/5025.png"
 with open(str(YPATHCAPTCHA), 'rb') as file:
     b64_string_captcha = base64.b64encode(file.read()).decode('UTF-8')
 
@@ -32,7 +32,7 @@ file_business = {
   "sobel_filter": 70
 }
 data = json.dumps(file_business)
-REQUEST_PATH = 'http://127.0.0.1:8000/get_captcha_solve_sequence_hybrid_merge_business'
+REQUEST_PATH = 'http://127.0.0.1:5000/get_captcha_solve_sequence_hybrid_merge_business'
 #print(data)
 headers = {"Content-type": "application/json", "Accept": "text/plain"}
 response = r.get(REQUEST_PATH, data=data, headers=headers)

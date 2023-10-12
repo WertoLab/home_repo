@@ -3,16 +3,17 @@ from starlette.middleware.cors import CORSMiddleware
 from microservice.controller import init_routes
 from microservice.service import Service
 from gunicorn.app.base import BaseApplication
+from flask import Flask
 
-
-app = FastAPI()
+app = Flask(__name__)
+'''
 app.add_middleware(
     CORSMiddleware,
     allow_origins=['*'],
     allow_methods=['*'],
     allow_headers=['*'],
 )
-
+'''
 
 service = Service()
 init_routes(app,service)
@@ -34,6 +35,7 @@ class GunicornApp(BaseApplication):
 
 
 if __name__ == '__main__':
+    '''
     options = {
         'bind': '0.0.0.0:8000',
         'workers': 4,
@@ -41,7 +43,8 @@ if __name__ == '__main__':
         'timeout': 60,
     }
     g=GunicornApp(app, options).run()
-
+    '''
+    app.run()
 
 
 
