@@ -1,5 +1,3 @@
-from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
 from microservice.controller import init_routes
 from microservice.service import Service
 from gunicorn.app.base import BaseApplication
@@ -45,60 +43,3 @@ if __name__ == '__main__':
     g=GunicornApp(app, options).run()
     '''
     app.run()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# app = Flask(__name__)
-from fastapi import Response
-
-# @app.route("/hello_world")
-# def hello_world():
-#     return  {"hello_world": "flask_api"}
-# @app.route("/")
-# def home():
-#     return  {"home": "home_page"}
-
-
-
-# @app.route("/get_captcha_solve_sequence_old_our")
-# async def get_captcha_solve_sequence_old(info: str):
-#     return Response(content=json.dumps(service.get_captcha_solve_sequence_old(await info.json())),
-#                     media_type='application/json')
-
-
-# @app.route("/get_captcha_solve_sequence_sobel_our",methods = ['GET'])
-# def get_captcha_solve_sequence():
-#     screenshot_captcha=request.files["screenshot_captcha"]
-#     f=screenshot_captcha.stream.seek(0,2)
-#     f=t
-#     # print(info)
-#     # json_data=json.dumps(
-#     #    service.get_captcha_solve_sequence_sobel(json.loads(info))
-#     # )
-#
-
-
-# @app.route("/get_captcha_solve_sequence_old_business")
-# async def get_captcha_solve_sequence_old_business(info: str):
-#     sequence, discolored, captcha, icons, answer = service.get_captcha_solve_sequence_old_business(await info.json())
-#     return Response(content=json.dumps({"coordinate_sequence": sequence, "discolored_captcha": discolored, "captcha": captcha, "icons": icons, "answer": answer}),
-#                     media_type='application/json')
-#
-#
-# @app.route("/get_captcha_solve_sequence_sobel_business")
-# async def get_captcha_solve_sequence_business(info: str):
-#     sequence, discolored, captcha, icons, answer = service.get_captcha_solve_sequence_sobel_business(await info.json())
-#     return Response(content=json.dumps({"coordinate_sequence": sequence, "discolored_captcha": discolored, "captcha": captcha, "icons": icons, "answer": answer}),
-#                     media_type='application/json')
-

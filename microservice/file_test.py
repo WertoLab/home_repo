@@ -1,10 +1,6 @@
-import ast
 import base64
 import json
-import os.path
-import sys
 from pathlib import Path
-from typing import Union
 import cv2
 import requests as r
 
