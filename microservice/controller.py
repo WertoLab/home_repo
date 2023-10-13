@@ -12,6 +12,7 @@ def init_routes(app, service):
         return Response(content=json.dumps({"hello": "world"}),
                         media_type='application/json')
 
+
     @app.get("/get_unresolved_captchas")
     async def get_unresolved_captchas():
         service.get_batch()
