@@ -61,10 +61,7 @@ class Service:
         processed_image = mag.astype(np.uint8)
         return cv2.cvtColor(processed_image, cv2.COLOR_GRAY2BGR)
 
-    def detect_v2(self, name, captcha, threshold, model_name):
-        model = YOLO("microservice/AI_weights/" + str(model_name))
-        prediction = model.predict(self.sobel_filter(threshold, captcha))
-        # cv2.imwrite("sobel.png", self.sobel_filter(threshold, captcha))
+    def get_boxes_detection(self, name, prediction, model):
         index = 0
         for box in self.get_boxes(prediction):
             if model.model.names[int(prediction[0].boxes.cls.cpu()[index])] == name:
@@ -73,6 +70,11 @@ class Service:
                 return (int(box[2]) + int(box[0])) / 2, (int(box[3]) + int(box[1])) / 2
             index += 1
         return None, None
+
+    def detect_v2(self, captcha, threshold, model):
+        prediction = model.predict(self.sobel_filter(threshold, captcha))
+
+        return prediction
 
     def detect_v1(self, name, captcha):
         model = YOLO("microservice/AI_weights/best.pt")
@@ -140,7 +142,7 @@ class Service:
             endpoint_url='https://storage.yandexcloud.net',
             aws_access_key_id='YCAJEPC30tPiNB3wctwCuqNhZ',
             aws_secret_access_key='YCOCKWm4HIFDBMV4-jNTtTe20QQHAx42NPJkdkI8'
-        )   #TODO Убери ключи из кода это  не безопасно
+        )
 
         s3.put_object(Bucket='capchas-bucket', Key=new_object, Body=content,
                       StorageClass='COLD')
@@ -185,9 +187,11 @@ class Service:
         index = 1
         detected_objects = 0
         captcha_id = str(uuid.uuid4())
+        model = YOLO("microservice/AI_weights/captcha_segmentation.pt")
+        prediction = self.detect_v2(captcha,70,model)
         for icon in icons:
             name = self.classify_image(icon)
-            x, y = self.detect_v2(name, captcha, 70, "captcha_segmentation.pt")
+            x, y = self.get_boxes_detection(name, prediction, model)
 
             if x is not None and x != "not":
                 cv2.circle(copy, (int(x), int(y)), 2, (0, 0, 255), 4)
@@ -210,7 +214,7 @@ class Service:
         cv2.imwrite("answer.png", copy)
 
         return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
-
+    '''
     def get_captcha_solve_sequence_hybrid(self, request: RequestSobel):
         captcha = b64_decode(request.screenshot_captcha)
         icons = preprocess_captcha_sobel(icons=b64_decode(request.screenshot_icons))
@@ -268,7 +272,7 @@ class Service:
         cv2.imwrite("answer.png", copy)
 
         return final_sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
-
+    '''
 
     def get_captcha_solve_sequence_hybrid_merge_business(self, request: RequestBusiness):
         captcha = b64_decode(request.screenshot_captcha)
@@ -276,9 +280,11 @@ class Service:
         copy = captcha.copy()
         sequence = []
         index = 1
+        model = YOLO("microservice/AI_weights/best_v3.pt")
+        prediction = self.detect_v2(captcha, 70, model)
         for icon in icons:
             name = self.classify_image(icon)
-            x, y = self.detect_v2(name, captcha, 70, "best_v3.pt")
+            x, y = self.get_boxes_detection(name,prediction,model)
             sequence.append({"x": x, "y": y})
             index += 1
 
@@ -297,7 +303,7 @@ class Service:
             if final_sequence[i].get("x") is not None:
                 cv2.circle(copy, (int(final_sequence[i].get("x")), int(final_sequence[i].get("y"))), 2, (0, 0, 255), 4)
                 cv2.putText(copy, str(i+1), (int(final_sequence[i].get("x")) + 5, int(final_sequence[i].get("y")) + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                                                            #TODO не забудь тут исправить 70 и в подобных
+
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
         cv2.imwrite("answer.png", copy)
