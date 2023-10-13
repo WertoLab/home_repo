@@ -301,6 +301,5 @@ class Service:
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
         cv2.imwrite("answer.png", copy)
-        if error:
-            return error
-        return final_sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
+
+        return final_sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer,error
