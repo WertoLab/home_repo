@@ -2,4 +2,4 @@
 *.pyc
 /shelf/
 /.idea
-Config.py
+/Config.py
