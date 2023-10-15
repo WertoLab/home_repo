@@ -10,23 +10,28 @@ import numpy as np
 import cv2
 import pickle
 from torchvision import transforms
-from ultralytics import YOLO
+import microservice.controller as controller
 from sklearn.preprocessing import LabelEncoder
-from microservice.data.filters import RequestSobel, RequestBusiness
+from microservice.data.filters import RequestBusiness
+import Config
 
 
 def readb64(encoded_data):
     nparr = np.frombuffer(encoded_data, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
     return img
+
+
 def b64_decode(im_b64: str):
-        img_bytes = base64.b64decode(im_b64.encode('utf-8'))
-        img = readb64(img_bytes)
-        img_arr = np.asarray(img)
-        img_bgr = cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
-        return img_bgr
+    img_bytes = base64.b64decode(im_b64.encode('utf-8'))
+    img = readb64(img_bytes)
+    img_arr = np.asarray(img)
+    img_bgr = cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
+    return img_bgr
+
 
 class Service:
+
     def get_boxes(self, result):
         boxes = []
         all_params = result[0].boxes
@@ -76,18 +81,6 @@ class Service:
 
         return prediction
 
-    def detect_v1(self, name, captcha):
-        model = YOLO("microservice/AI_weights/best.pt")
-        prediction = model.predict(captcha)
-        index = 0
-        for box in self.get_boxes(prediction):
-            if model.model.names[int(prediction[0].boxes.cls.cpu()[index])] == name:
-                # int(box[0]), int(box[1]) , int(box[2]), int(box[3])
-                print(box)
-                return (int(box[2]) + int(box[0])) / 2, (int(box[3]) + int(box[1])) / 2
-            index += 1
-        return None, None
-
     def predict_one_sample(self, model, inputs):
 
         with torch.no_grad():
@@ -112,7 +105,6 @@ class Service:
         alexnet.load_state_dict(torch.load("microservice/AI_weights/smartsolver_weights_1_6.pth", map_location='cpu'))
         alexnet.eval()
 
-
         label_encoder = pickle.load(open("microservice/label_encoder.pkl", 'rb'))
         model = alexnet
 
@@ -133,15 +125,13 @@ class Service:
 
         return predicted_class
 
-
-
     def put_object_to_s3(self, new_object, content):
         session = boto3.session.Session()
         s3 = session.client(
             service_name='s3',
             endpoint_url='https://storage.yandexcloud.net',
-            aws_access_key_id='YCAJEPC30tPiNB3wctwCuqNhZ',
-            aws_secret_access_key='YCOCKWm4HIFDBMV4-jNTtTe20QQHAx42NPJkdkI8'
+            aws_access_key_id=Config.aws_access_key_id,
+            aws_secret_access_key=Config.aws_secret_access_key
         )
 
         s3.put_object(Bucket='capchas-bucket', Key=new_object, Body=content,
@@ -153,8 +143,8 @@ class Service:
         s3 = session.client(
             service_name='s3',
             endpoint_url='https://storage.yandexcloud.net',
-            aws_access_key_id='YCAJEPC30tPiNB3wctwCuqNhZ',
-            aws_secret_access_key='YCOCKWm4HIFDBMV4-jNTtTe20QQHAx42NPJkdkI8'
+            aws_access_key_id=Config.aws_access_key_id,
+            aws_secret_access_key=Config.aws_secret_access_key
         )
 
         for key in s3.list_objects(Bucket='capchas-bucket')['Contents']:
@@ -171,13 +161,13 @@ class Service:
         s3 = session.client(
             service_name='s3',
             endpoint_url='https://storage.yandexcloud.net',
-            aws_access_key_id='YCAJEPC30tPiNB3wctwCuqNhZ',
-            aws_secret_access_key='YCOCKWm4HIFDBMV4-jNTtTe20QQHAx42NPJkdkI8'
+            aws_access_key_id=Config.aws_access_key_id,
+            aws_secret_access_key=Config.aws_secret_access_key
         )
         objects = s3.list_objects(Bucket='capchas-bucket', Prefix='captchas/')
         for object in objects['Contents']:
             s3.delete_object(Bucket='capchas-bucket', Key=object['Key'])
-        return {"stutus": "deleted"}
+        return {"status": "deleted"}
 
     def get_captcha_solve_sequence_segmentation_sobel(self, request: RequestBusiness):
         captcha = b64_decode(request.screenshot_captcha)
@@ -187,8 +177,8 @@ class Service:
         index = 1
         detected_objects = 0
         captcha_id = str(uuid.uuid4())
-        model = YOLO("microservice/AI_weights/captcha_segmentation.pt")
-        prediction = self.detect_v2(captcha,70,model)
+        model = controller.segmentation_model
+        prediction = self.detect_v2(captcha, request.filter, model)
         for icon in icons:
             name = self.classify_image(icon)
             x, y = self.get_boxes_detection(name, prediction, model)
@@ -211,9 +201,9 @@ class Service:
 
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
-        cv2.imwrite("answer.png", copy)
 
         return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
+
     '''
     def get_captcha_solve_sequence_hybrid(self, request: RequestSobel):
         captcha = b64_decode(request.screenshot_captcha)
@@ -280,11 +270,11 @@ class Service:
         copy = captcha.copy()
         sequence = []
         index = 1
-        model = YOLO("microservice/AI_weights/best_v3.pt")
-        prediction = self.detect_v2(captcha, 70, model)
+        model = controller.detection_model
+        prediction = self.detect_v2(captcha, request.filter, model)
         for icon in icons:
             name = self.classify_image(icon)
-            x, y = self.get_boxes_detection(name,prediction,model)
+            x, y = self.get_boxes_detection(name, prediction, model)
             sequence.append({"x": x, "y": y})
             index += 1
 
@@ -302,10 +292,12 @@ class Service:
                 error = True
             if final_sequence[i].get("x") is not None:
                 cv2.circle(copy, (int(final_sequence[i].get("x")), int(final_sequence[i].get("y"))), 2, (0, 0, 255), 4)
-                cv2.putText(copy, str(i+1), (int(final_sequence[i].get("x")) + 5, int(final_sequence[i].get("y")) + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                cv2.putText(copy, str(i + 1),
+                            (int(final_sequence[i].get("x")) + 5, int(final_sequence[i].get("y")) + 4),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
         b64_string_answer = base64.b64encode(copy).decode('UTF-8')
-        cv2.imwrite("answer.png", copy)
+        # cv2.imwrite("answer.png", copy)
 
-        return final_sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer,error
+        return final_sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer, error

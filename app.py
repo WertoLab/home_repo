@@ -1,20 +1,13 @@
+
 from microservice.controller import init_routes
 from microservice.service import Service
 from gunicorn.app.base import BaseApplication
 from flask import Flask
 
 app = Flask(__name__)
-'''
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=['*'],
-    allow_methods=['*'],
-    allow_headers=['*'],
-)
-'''
 
 service = Service()
-init_routes(app,service)
+init_routes(app, service)
 
 
 class GunicornApp(BaseApplication):

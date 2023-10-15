@@ -5,8 +5,8 @@ import cv2
 import requests as r
 
 ROOT_PATH = Path(__file__).resolve(strict=True).parent.parent.parent
-YPATHCAPTCHA="/Users/andrey/Downloads/sotka/image_005.png"#9
-YPATHICONS="/Users/andrey/Downloads/sotka/5005.png"
+YPATHCAPTCHA="/Users/andrey/Downloads/sotka/image_010.png"#9
+YPATHICONS="/Users/andrey/Downloads/sotka/5010.png"
 with open(str(YPATHCAPTCHA), 'rb') as file:
     b64_string_captcha = base64.b64encode(file.read()).decode('UTF-8')
 
@@ -31,7 +31,7 @@ data = json.dumps(file_business)
 REQUEST_PATH = 'http://127.0.0.1:5000/get_captchas'
 #print(data)
 headers = {"Content-type": "application/json", "Accept": "text/plain"}
-response = r.get(REQUEST_PATH, data=data, headers=headers)
+response = r.post(REQUEST_PATH, data=data, headers=headers)
 coord_str = response.content.decode('UTF-8')
 result_path = '/Users/andrey/Desktop/ dataset/159.jpg'
 copy = cv2.imread('/Users/andrey/Desktop/ dataset/69.jpg')
