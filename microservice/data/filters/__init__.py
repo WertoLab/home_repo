@@ -1,8 +1,3 @@
-class SobelFilter:
-    def __init__(self, value):
-        self.value = value
-
-
 class RequestBusiness:
     def __init__(self, screenshot_captcha, screenshot_icons, filter):
         self.filter = filter
