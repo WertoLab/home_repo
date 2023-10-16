@@ -90,13 +90,22 @@ class Service:
             probs = torch.nn.functional.softmax(logit, dim=-1).numpy()
         return probs
 
-    def classify_image(self, image_input, alexnet, label_encoder):
+    def classify_image(self, image_input):
         your_classes = ["arrow", "book", "bucket", "clock", "cloud", "compass", "electro", "eye", "face",
                         "factory", "fire", "flag", "hand", "heart", "house", "key", "keyboard", "light",
                         "lightning", "lock", "magnifier", "mail", "microphone", "monitor", "paper",
                         "paperclip", "pen", "person", "photo", "pill", "scissors", "shop_cart", "sound",
                         "star", "store_cart", "t-shirt", "ticket", "traffic_light", "umbrella", "water", "wrench"]
+        label_encoder = LabelEncoder()
+        label_encoder.fit(your_classes)
+        with open("microservice/label_encoder.pkl", "wb") as f:
+            pickle.dump(label_encoder, f)
 
+        alexnet = AlexNet()
+        alexnet.load_state_dict(torch.load("microservice/AI_weights/smartsolver_weights_1_6.pth", map_location='cpu'))
+        alexnet.eval()
+
+        label_encoder = pickle.load(open("microservice/label_encoder.pkl", 'rb'))
         model = alexnet
 
         preprocess = transforms.Compose([
@@ -171,7 +180,7 @@ class Service:
         model = controller.segmentation_model
         prediction = self.detect_v2(captcha, request.filter, model)
         for icon in icons:
-            name = self.classify_image(icon, controller.alexnet, controller.label_encoder)
+            name = self.classify_image(icon)
             x, y = self.get_boxes_detection(name, prediction, model)
 
             if x is not None and x != "not":
@@ -264,7 +273,7 @@ class Service:
         model = controller.detection_model
         prediction = self.detect_v2(captcha, request.filter, model)
         for icon in icons:
-            name = self.classify_image(icon, controller.alexnet, controller.label_encoder)
+            name = self.classify_image(icon)
             x, y = self.get_boxes_detection(name, prediction, model)
             sequence.append({"x": x, "y": y})
             index += 1
