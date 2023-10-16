@@ -28,7 +28,7 @@ file_business = {
   "sobel_filter": 70
 }
 data = json.dumps(file_business)
-REQUEST_PATH = 'http://127.0.0.1:5000/get_captchas'
+REQUEST_PATH = 'http://127.0.0.1:8000/get_captchas'
 #print(data)
 headers = {"Content-type": "application/json", "Accept": "text/plain"}
 response = r.post(REQUEST_PATH, data=data, headers=headers)
