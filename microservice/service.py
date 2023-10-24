@@ -3,17 +3,24 @@ import os
 import shutil
 import uuid
 import boto3
+import numpy
+
 from microservice.preprocess import preprocess_captcha_sobel
 from microservice.AI_models.ClassificationModel import AlexNet
 import torch
 import numpy as np
 import cv2
 import pickle
+from numpy import sqrt
+from numpy import sum
 from torchvision import transforms
 import microservice.controller as controller
 from sklearn.preprocessing import LabelEncoder
 from microservice.data.filters import RequestBusiness
 import Config
+import onnx
+import onnxruntime as ort
+from microservice.yolov8 import YOLOv8
 
 
 def readb64(encoded_data):
@@ -31,6 +38,33 @@ def b64_decode(im_b64: str):
 
 
 class Service:
+
+    def get_onnx_inference(self,data):
+        onnx_model = onnx.load("microservice/AI_weights/best_v3.onnx")
+        onnx.checker.check_model(onnx_model)
+        ort_sess = ort.InferenceSession("microservice/AI_weights/best_v3.onnx")
+        captcha = b64_decode(data.screenshot_captcha)
+        captcha = cv2.resize(captcha, (480, 480))
+        captcha = self.sobel_filter(70, captcha)
+        #icons = preprocess_captcha_sobel(icons=b64_decode(data.screenshot_icons))
+        #outputs = ort_sess.run(None, {'images': captcha.reshape(1, 3, 480, 480).astype(numpy.float32)},)
+        #print(np.array(outputs).shape)
+
+        model_path = "microservice/AI_weights/captcha_segmentation.onnx"
+        yolov8_detector = YOLOv8(model_path, conf_thres=0.5, iou_thres=0.8)
+
+        # Read image
+
+        # Detect Objects
+        boxes, scores, class_ids = yolov8_detector(captcha)
+        #print(boxes[0][0])
+        for box in boxes:
+            cv2.rectangle(captcha,(int(box[0]),int(box[1])),(int(box[2]),int(box[3])),(255, 0, 0), 2)
+        #print(boxes)
+        #print(class_ids)
+        cv2.imwrite("answer.png",captcha)
+        return {"status": "ok"}
+
 
     def get_boxes(self, result):
         boxes = []
@@ -54,14 +88,12 @@ class Service:
 
         for i in range(0, rows - 2):
             for j in range(0, columns - 2):
-                v = np.sum(np.sum(G_x * img[i:i + 3, j:j + 3]))
-                h = np.sum(np.sum(G_y * img[i:i + 3, j:j + 3]))
+                v = sum(sum(G_x * img[i:i + 3, j:j + 3]))
+                h = sum(sum(G_y * img[i:i + 3, j:j + 3]))
                 mag[i + 1, j + 1] = np.sqrt((v ** 2) + (h ** 2))
+                if mag[i+1, j+1] < threshold:
+                   mag[i + 1, j + 1] = 0
 
-        for p in range(0, rows):
-            for q in range(0, columns):
-                if mag[p, q] < threshold:
-                    mag[p, q] = 0
 
         processed_image = mag.astype(np.uint8)
         return cv2.cvtColor(processed_image, cv2.COLOR_GRAY2BGR)
@@ -76,8 +108,8 @@ class Service:
             index += 1
         return None, None
 
-    def detect_v2(self, captcha, threshold, model):
-        prediction = model.predict(self.sobel_filter(threshold, captcha))
+    def detect_v2(self, captcha, model):
+        prediction = model.predict(captcha)
 
         return prediction
 
@@ -169,16 +201,15 @@ class Service:
             s3.delete_object(Bucket='capchas-bucket', Key=object['Key'])
         return {"status": "deleted"}
 
-    def get_captcha_solve_sequence_segmentation_sobel(self, request: RequestBusiness):
-        captcha = b64_decode(request.screenshot_captcha)
-        icons = preprocess_captcha_sobel(icons=b64_decode(request.screenshot_icons))
+    def get_captcha_solve_sequence_segmentation_sobel(self, request: RequestBusiness, captcha, icons):
+
         copy = captcha.copy()
         sequence = []
         index = 1
         detected_objects = 0
         captcha_id = str(uuid.uuid4())
         model = controller.segmentation_model
-        prediction = self.detect_v2(captcha, request.filter, model)
+        prediction = self.detect_v2(captcha, model)
         for icon in icons:
             name = self.classify_image(icon)
             x, y = self.get_boxes_detection(name, prediction, model)
@@ -199,10 +230,10 @@ class Service:
             self.put_object_to_s3("captchas/" + captcha_id + ".txt", b64_string_captcha)
             shutil.rmtree("captchas")
         '''
-        b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
-        b64_string_answer = base64.b64encode(copy).decode('UTF-8')
+        #b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
+        #b64_string_answer = base64.b64encode(copy).decode('UTF-8')
 
-        return sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer
+        return sequence
 
     '''
     def get_captcha_solve_sequence_hybrid(self, request: RequestSobel):
@@ -271,7 +302,8 @@ class Service:
         sequence = []
         index = 1
         model = controller.detection_model
-        prediction = self.detect_v2(captcha, request.filter, model)
+        filtered_captcha = self.sobel_filter(request.filter, captcha)
+        prediction = self.detect_v2(filtered_captcha, model)
         for icon in icons:
             name = self.classify_image(icon)
             x, y = self.get_boxes_detection(name, prediction, model)
@@ -280,7 +312,7 @@ class Service:
 
         final_sequence = []
         error = False
-        segment = self.get_captcha_solve_sequence_segmentation_sobel(request)[0]
+        segment = self.get_captcha_solve_sequence_segmentation_sobel(request, captcha, icons)
 
         for i in range(len(sequence)):
             if segment[i].get("x") is None and sequence[i].get("x") is not None:
@@ -296,8 +328,8 @@ class Service:
                             (int(final_sequence[i].get("x")) + 5, int(final_sequence[i].get("y")) + 4),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-        b64_string_discolored = base64.b64encode(self.sobel_filter(70, captcha)).decode('UTF-8')
-        b64_string_answer = base64.b64encode(copy).decode('UTF-8')
+        #b64_string_discolored = base64.b64encode(filtered_captcha).decode('UTF-8')
+        #b64_string_answer = base64.b64encode(copy).decode('UTF-8')
         # cv2.imwrite("answer.png", copy)
 
-        return final_sequence, b64_string_discolored, request.screenshot_captcha, request.screenshot_icons, b64_string_answer, error
+        return final_sequence, error

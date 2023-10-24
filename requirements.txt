@@ -149,3 +149,5 @@ uvicorn
 
 flask~=3.0.0
 opencv-python~=4.8.0.76
+onnx
+onnxruntime

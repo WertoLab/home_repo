@@ -44,9 +44,16 @@ def init_routes(app, service):
     async def get_captcha_solve_sequence_business():
         rio = RequestBusiness.fromJson(request.get_json())
 
-        sequence, discolored, captcha, icons, answer, error = service.get_captcha_solve_sequence_hybrid_merge_business(
+        sequence, error = service.get_captcha_solve_sequence_hybrid_merge_business(
             request=rio)
         if error:
             return json.dumps({"status": 0, "request": "ERROR_CAPTCHA_UNSOLVABLE"})
         # return Response(content=json.dumps({"status": 1, "request": sequence}), media_type='application/json')
         return json.dumps({"status": 1, "request": sequence})
+
+    @app.route("/onnx_check", methods=['POST'])
+    async def get_onnx_check():
+       rio = RequestBusiness.fromJson(request.get_json())
+       return service.get_onnx_inference(rio)
+
+

@@ -8,5 +8,6 @@ COPY . /captcha_solver_app
 
 RUN pip3 install -r requirements.txt
 
+EXPOSE 8000
 
-CMD gunicorn app:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind=0.0.0.0:5000 --timeout 6000
+CMD python3 app.py
