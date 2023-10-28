@@ -1,5 +1,7 @@
 FROM python:3.10
 
+
+
 RUN mkdir /captcha_solver_app
 
 WORKDIR /captcha_solver_app

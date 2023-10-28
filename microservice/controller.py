@@ -2,13 +2,13 @@ from fastapi import Request
 import json
 
 from ultralytics import YOLO
-
+import time
 from microservice.data.filters import *
 from flask import request, send_file
 
 
 def init_models():
-    segmentation_model = YOLO("microservice/AI_weights/captcha_segmentation.pt")
+    segmentation_model = YOLO("microservice/AI_weights/captcha_segmentation_v2.pt")
     detection_model = YOLO("microservice/AI_weights/best_v3.pt")
     return segmentation_model, detection_model
 
@@ -43,7 +43,8 @@ def init_routes(app, service):
     @app.route("/get_captchas", methods=['POST'])
     async def get_captcha_solve_sequence_business():
         rio = RequestBusiness.fromJson(request.get_json())
-
+        #print(request.environ)
+        #f = open(str(request.environ)+".txt","w+")
         sequence, error = service.get_captcha_solve_sequence_hybrid_merge_business(
             request=rio)
         if error:
