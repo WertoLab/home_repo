@@ -1,15 +1,13 @@
 FROM python:3.10
 
-
-
-RUN mkdir /captcha_solver_app
-
 WORKDIR /captcha_solver_app
+
+COPY ./requirements.txt /captcha_solver_app/
+
+RUN pip install --upgrade pip && pip install -r requirements.txt --no-cache-dir
 
 COPY . /captcha_solver_app
 
-RUN pip3 install -r requirements.txt
-
 EXPOSE 8000
 
-CMD python3 app.py
+CMD gunicorn app:app --workers 5 --worker-class gevent --bind 0.0.0.0:8000
