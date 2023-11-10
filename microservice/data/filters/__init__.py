@@ -7,7 +7,7 @@ class RequestBusiness:
     @classmethod
     def fromJson(cls, json: dict):
         return cls(
-            screenshot_captcha=json.get("body"),
-            screenshot_icons=json.get("imginstructions"),
-            filter=json.get("sobel_filter")
+            screenshot_captcha=json.get("body", None),
+            screenshot_icons=json.get("imginstructions", None),
+            filter=json.get("sobel_filter", None),
         )

@@ -11,6 +11,7 @@ YPATHICONS = "./images/msg803864447-15473.jpg"
 with open(str(YPATHCAPTCHA), "rb") as file:
     b64_string_captcha = base64.b64encode(file.read()).decode("UTF-8")
 
+
 with open(str(YPATHICONS), "rb") as file:
     b64_string_icons = base64.b64encode(file.read()).decode("UTF-8")
 
@@ -36,7 +37,8 @@ file_business = {
     "method": "base64",
     "coordinatescaptcha": 1,
     "key": "YOUR_APIKEY",
-    "body": b64_string_captcha,
+    # "body": b64_string_captcha,
+    "body": "",
     "imginstructions": b64_string_icons,
     "textinstructions": "Кликните в таком порядке | Click in the following order",
     "json": 1,
@@ -56,4 +58,5 @@ coord_str = response.content.decode("UTF-8")
 # cv2.rectangle(copy, (int(0), int(217)), (int(440), int(300)), (0, 0, 255), 2)
 # # cv2.rectangle(copy, (int(8), int(441)), (int(338), int(514)), (255, 0, 0), 2)
 # cv2.imwrite(result_path, copy)
+# print(response.status_code)
 print(coord_str)
