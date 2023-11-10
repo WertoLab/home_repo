@@ -6,8 +6,11 @@ def check_is_base64(string: str) -> bool:
     if not string.isascii():
         return False
 
-    is_base64 = base64.b64encode(base64.b64decode(string)) == string.encode()
-    return is_base64
+    try:
+        is_base64 = base64.b64encode(base64.b64decode(string)) == string.encode()
+        return is_base64
+    except Exception:
+        return False
 
 
 def decode_base64_or_none(

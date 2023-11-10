@@ -38,7 +38,7 @@ file_business = {
     "coordinatescaptcha": 1,
     "key": "YOUR_APIKEY",
     # "body": b64_string_captcha,
-    "body": "",
+    "body": "1111111111111111111",
     "imginstructions": b64_string_icons,
     "textinstructions": "Кликните в таком порядке | Click in the following order",
     "json": 1,
