@@ -1,0 +1,1 @@
+from .alchemy_repository import SqlAlchemyCaptchaReportRepository
