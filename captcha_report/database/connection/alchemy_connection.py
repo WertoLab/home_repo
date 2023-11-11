@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import typing as tp
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
@@ -9,8 +10,16 @@ from sqlalchemy.ext.asyncio import (
 
 
 class SqlAlchemyConnection:
+    _instance: SqlAlchemyConnection = None
+
     _engine: AsyncEngine
     _session_factory: async_sessionmaker[AsyncSession]
+
+    def __new__(cls, *args: tp.Any, **kwargs: tp.Any):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+
+        return cls._instance
 
     def __init__(self, database_url: str, echo: bool = False) -> None:
         self._engine = create_async_engine(url=database_url, echo=echo)
@@ -22,16 +31,8 @@ class SqlAlchemyConnection:
 
     async def get_session(self) -> AsyncSession:
         async with self._session_factory() as session:
-            try:
-                yield session
-                await session.commit()
-
-            except SQLAlchemyError as exc:
-                await session.rollback()
-                raise
-
-            finally:
-                await session.close()
+            yield session
+            await session.close()
 
     @property
     def engine(self) -> AsyncEngine:

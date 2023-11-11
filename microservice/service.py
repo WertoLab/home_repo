@@ -3,7 +3,6 @@ import os
 import shutil
 import uuid
 import boto3
-import numpy
 
 from microservice.preprocess import preprocess_captcha_sobel
 from microservice.AI_models.ClassificationModel import AlexNet
@@ -11,10 +10,10 @@ import torch
 import numpy as np
 import cv2
 import pickle
-from numpy import sqrt
 from numpy import sum
 from torchvision import transforms
-import microservice.controller as controller
+import microservice as inited_models
+
 from sklearn.preprocessing import LabelEncoder
 from microservice.data.filters import RequestBusiness
 import Config
@@ -187,7 +186,7 @@ class Service:
         )
         alexnet.eval()
 
-        label_encoder = pickle.load(open("microservice/label_encoder.pkl", "rb"))
+        label_encoder = inited_models.labal_encoder
         model = alexnet
 
         preprocess = transforms.Compose(
@@ -266,7 +265,7 @@ class Service:
         index = 1
         detected_objects = 0
         captcha_id = str(uuid.uuid4())
-        model = controller.segmentation_model
+        model = inited_models.segmentation_model
         prediction = self.detect_v2(captcha, model)
         for icon in icons:
             name = self.classify_image(icon)
@@ -369,7 +368,7 @@ class Service:
         copy = captcha.copy()
         sequence = []
         index = 1
-        model = controller.detection_model
+        model = inited_models.detection_model
         filtered_captcha = self.sobel_filter(request.filter, captcha)
         prediction = self.detect_v2(filtered_captcha, model)
         for icon in icons:

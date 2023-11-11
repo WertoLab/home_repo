@@ -3,7 +3,7 @@ from pydantic import ValidationError
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from microservice.exceptions.api_exception import ApiException
-from loguru import logger
+from microservice.utils.logger import internal_error_logger, validation_error_logger
 from microservice.models.validation_error_message import ValidationErrorMessage
 
 
@@ -21,6 +21,7 @@ class FastApiExceptionHandler:
         if exception_handler is not None:
             return exception_handler(exc)
 
+        internal_error_logger.error(str(exc))
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
@@ -39,8 +40,7 @@ class FastApiExceptionHandler:
             for error in exc.errors()
         ]
 
-        logger.error(str(error_messages))
-        print(str(error_messages))
+        validation_error_logger.error(str(error_messages))
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
@@ -50,7 +50,6 @@ class FastApiExceptionHandler:
         )
 
     def _handle_api_exception(self, exc: ApiException) -> None:
-        logger.error(exc.message)
         return JSONResponse(
             status_code=exc.status_code,
             content={
