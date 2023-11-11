@@ -1,12 +1,13 @@
 import uvicorn
 import captcha_report
-import microservice
+import captcha_resolver
 
+from captcha_resolver import InvalidCaptchaHandler
 from contextlib import asynccontextmanager
+from core.exceptions.handlers.fastapi_exception_handler import FastApiExceptionHandler
 from captcha_report.database.utils.create_tables import create_captcha_report_tables
-from microservice.exceptions.fastapi_exception_handler import FastApiExceptionHandler
 from fastapi import FastAPI
-from kink import inject
+from kink import di, inject
 
 
 @inject
@@ -17,9 +18,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-app.add_exception_handler(Exception, FastApiExceptionHandler())
 app.include_router(captcha_report.router)
-app.include_router(microservice.router)
+app.include_router(captcha_resolver.router)
+
+exception_handler = FastApiExceptionHandler()
+exception_handler.add_exception_handler(InvalidCaptchaHandler())
+app.middleware("http")(exception_handler)
 
 
 if __name__ == "__main__":

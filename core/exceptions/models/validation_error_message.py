@@ -1,7 +1,7 @@
 from __future__ import annotations
 import typing as tp
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 
 
 class ValidationErrorMessage(BaseModel):

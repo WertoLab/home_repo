@@ -1,5 +1,7 @@
 import typing as tp
+
 import uuid
+import asyncio
 from captcha_report.database.repositories import CaptchaReportRepository
 from kink import inject
 from datetime import date
@@ -21,19 +23,32 @@ class CaptchaReportService:
     async def count_reports_statistic_by_date(
         self, report_date: date
     ) -> tp.List[CaptchaReportStatistic]:
-        resolved = await self._repository.count_reports_by_date_and_status(
-            report_date=report_date,
-            status=StatusEnum.RESOLVED,
-        )
+        async with asyncio.TaskGroup() as tg:
+            count_resolved = tg.create_task(
+                self._repository.count_reports_by_date_and_status(
+                    report_date=report_date,
+                    status=StatusEnum.RESOLVED,
+                )
+            )
 
-        not_resolved = await self._repository.count_reports_by_date_and_status(
-            report_date=report_date,
-            status=StatusEnum.NOT_RESOLVED,
-        )
+            count_not_resolved = tg.create_task(
+                self._repository.count_reports_by_date_and_status(
+                    report_date=report_date,
+                    status=StatusEnum.NOT_RESOLVED,
+                )
+            )
 
-        failed = await self._repository.count_reports_by_date_and_status(
-            report_date=report_date,
-            status=StatusEnum.FAILED,
+            count_failed = tg.create_task(
+                self._repository.count_reports_by_date_and_status(
+                    report_date=report_date,
+                    status=StatusEnum.FAILED,
+                )
+            )
+
+        resolved, not_resolved, failed = (
+            count_resolved.result(),
+            count_not_resolved.result(),
+            count_failed.result(),
         )
 
         return CaptchaReportStatistic(

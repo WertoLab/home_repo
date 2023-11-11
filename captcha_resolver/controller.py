@@ -1,18 +1,17 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-import time
 import functools
 from fastapi import Request
 import json
 
 from ultralytics import YOLO
-from microservice.data.filters import *
+from captcha_resolver.data.filters import *
 from flask import request, send_file
 
 
 def init_models():
-    segmentation_model = YOLO("microservice/AI_weights/captcha_segmentation_v2.pt")
-    detection_model = YOLO("microservice/AI_weights/best_v3.pt")
+    segmentation_model = YOLO("captcha_resolver/AI_weights/captcha_segmentation_v2.pt")
+    detection_model = YOLO("captcha_resolver/AI_weights/best_v3.pt")
     return segmentation_model, detection_model
 
 

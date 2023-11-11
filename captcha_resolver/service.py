@@ -4,22 +4,22 @@ import shutil
 import uuid
 import boto3
 
-from microservice.preprocess import preprocess_captcha_sobel
-from microservice.AI_models.ClassificationModel import AlexNet
+from captcha_resolver.preprocess import preprocess_captcha_sobel
+from captcha_resolver.AI_models.ClassificationModel import AlexNet
 import torch
 import numpy as np
 import cv2
 import pickle
 from numpy import sum
 from torchvision import transforms
-import microservice as inited_models
+import captcha_resolver as inited_models
 
 from sklearn.preprocessing import LabelEncoder
-from microservice.data.filters import RequestBusiness
+from captcha_resolver.data.filters import RequestBusiness
 import Config
 import onnx
 import onnxruntime as ort
-from microservice.yolov8 import YOLOv8
+from captcha_resolver.yolov8 import YOLOv8
 
 
 def readb64(encoded_data):
@@ -38,9 +38,9 @@ def b64_decode(im_b64: str):
 
 class Service:
     def get_onnx_inference(self, data):
-        onnx_model = onnx.load("microservice/AI_weights/best_v3.onnx")
+        onnx_model = onnx.load("captcha_resolver/AI_weights/best_v3.onnx")
         onnx.checker.check_model(onnx_model)
-        ort_sess = ort.InferenceSession("microservice/AI_weights/best_v3.onnx")
+        ort_sess = ort.InferenceSession("captcha_resolver/AI_weights/best_v3.onnx")
         captcha = b64_decode(data.screenshot_captcha)
         captcha = cv2.resize(captcha, (480, 480))
         captcha = self.sobel_filter(70, captcha)
@@ -48,7 +48,7 @@ class Service:
         # outputs = ort_sess.run(None, {'images': captcha.reshape(1, 3, 480, 480).astype(numpy.float32)},)
         # print(np.array(outputs).shape)
 
-        model_path = "microservice/AI_weights/captcha_segmentation.onnx"
+        model_path = "captcha_resolver/AI_weights/captcha_segmentation.onnx"
         yolov8_detector = YOLOv8(model_path, conf_thres=0.5, iou_thres=0.8)
 
         # Read image
@@ -174,13 +174,13 @@ class Service:
         ]
         label_encoder = LabelEncoder()
         label_encoder.fit(your_classes)
-        with open("microservice/label_encoder.pkl", "wb") as f:
+        with open("captcha_resolver/label_encoder.pkl", "wb") as f:
             pickle.dump(label_encoder, f)
 
         alexnet = AlexNet()
         alexnet.load_state_dict(
             torch.load(
-                "microservice/AI_weights/smartsolver_weights_1_6.pth",
+                "captcha_resolver/AI_weights/smartsolver_weights_1_6.pth",
                 map_location="cpu",
             )
         )

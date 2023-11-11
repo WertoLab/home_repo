@@ -1,2 +1,2 @@
 from .abstractions.captcha_report_repository import CaptchaReportRepository
-from .implementations.alchemy_repository import SqlAlchemyCaptchaReportRepository
+from .implementations.sqlalchemy_repository import SqlAlchemyCaptchaReportRepository

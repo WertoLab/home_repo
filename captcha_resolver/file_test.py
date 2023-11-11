@@ -1,7 +1,6 @@
 import base64
 import json
 from pathlib import Path
-import cv2
 import requests as r
 
 ROOT_PATH = Path(__file__).resolve(strict=True).parent.parent.parent

@@ -1,5 +1,5 @@
+from core.config import settings
 from captcha_report import Base
-from captcha_report.config import settings
 from captcha_report.database.connection import SqlAlchemyConnection
 
 

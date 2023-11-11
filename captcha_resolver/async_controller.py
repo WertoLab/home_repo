@@ -1,12 +1,13 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import functools
+from concurrent.futures import ThreadPoolExecutor
+from kink import di
 from fastapi import APIRouter, Depends
-from microservice.models.capcha_request import CapchaRequest
-from microservice.service import Service
+
+from captcha_resolver.models.capcha_request import CapchaRequest
+from captcha_resolver.service import Service
 from captcha_report.models.captcha_report_models import CaptchaReportCreate, StatusEnum
 from captcha_report.services.captcha_report_service import CaptchaReportService
-from kink import di
 
 
 router = APIRouter(prefix="")
@@ -29,7 +30,11 @@ async def get_captcha_solve_sequence_business(
         )
 
     if error:
-        report_create = CaptchaReportCreate(status=StatusEnum.NOT_RESOLVED)
+        report_create = CaptchaReportCreate(
+            status=StatusEnum.NOT_RESOLVED,
+            information=str(sequence),
+        )
+
         await report_service.save_report(report_create)
 
         return {

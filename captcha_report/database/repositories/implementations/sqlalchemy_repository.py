@@ -1,6 +1,6 @@
 import typing as tp
 from datetime import date
-from captcha_report.config import settings
+from core.config import settings
 from captcha_report.database.connection import SqlAlchemyConnection
 from captcha_report.database.repositories import CaptchaReportRepository
 from kink import inject
@@ -24,7 +24,7 @@ class SqlAlchemyCaptchaReportRepository(CaptchaReportRepository):
         self, report_date: date, status: StatusEnum
     ):
         query = (
-            select(func.count("*"))
+            select(func.count())
             .select_from(CaptchaReport)
             .where(
                 CaptchaReport.report_date == report_date,
