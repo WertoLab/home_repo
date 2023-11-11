@@ -1,6 +1,8 @@
 from __future__ import annotations
+from asyncio import current_task
 
 import typing as tp
+from sqlalchemy.orm import scoped_session
 from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
@@ -29,10 +31,9 @@ class SqlAlchemyConnection:
             expire_on_commit=False,
         )
 
-    async def get_session(self) -> AsyncSession:
-        async with self._session_factory() as session:
-            yield session
-            await session.close()
+    @property
+    def session_factory(self) -> async_sessionmaker[AsyncSession]:
+        return self._session_factory
 
     @property
     def engine(self) -> AsyncEngine:

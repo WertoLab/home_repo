@@ -35,7 +35,7 @@ class FastApiExceptionHandler:
             ValidationErrorMessage(
                 fields=error.get("loc"),
                 message=error.get("msg"),
-                input_value=error.get("input"),
+                input_value=str(error.get("input")),
             ).model_dump_json()
             for error in exc.errors()
         ]

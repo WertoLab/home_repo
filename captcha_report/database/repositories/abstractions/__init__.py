@@ -1,1 +1,0 @@
-from .captcha_report_repository import CaptchaReportRepository
