@@ -17,7 +17,7 @@ class PrimaryKey(BaseModel):
 class CaptchaReportInDB(PrimaryKey):
     report_date: date
     status: StatusEnum
-    information: str | None = Field(max_length=500, default=None)
+    information: str | None = Field(max_length=700, default=None)
 
     class Config:
         from_attributes = True
@@ -32,7 +32,7 @@ class CaptchaReportStatistic(BaseModel):
 
 class CaptchaReportCreate(BaseModel):
     status: StatusEnum
-    information: str | None = Field(max_length=500, default=None)
+    information: str | None = Field(max_length=700, default=None)
 
 
 class CaptchaReportFilter(BaseModel):

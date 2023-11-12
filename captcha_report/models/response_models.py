@@ -1,8 +1,13 @@
 import typing as tp
-from pydantic import BaseModel, model_validator
-from captcha_report.models.captcha_report_models import CaptchaReportInDB
+
+from datetime import date
+from pydantic import BaseModel
 
 
 class CaptchaReportResponse(BaseModel):
+    class Report(BaseModel):
+        report_date: date
+        information: str | None
+
     report_count: int
-    reports: tp.List[CaptchaReportInDB]
+    reports: tp.List[Report]
