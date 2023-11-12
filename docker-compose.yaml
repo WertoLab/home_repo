@@ -1,19 +1,45 @@
-version: '3'
+version: '3.8'
+
 services:
-  app1:
-    build: .
+  postgres:
+    image: postgres:14.1-alpine
+    restart: always
+    volumes:
+    - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
     expose:
-      - 8000
+      - ${POSTGRES_PORT}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    env_file:
+        - .env
 
-  app2:
+  app:
     build: .
-    expose:
-      - 8000
-
-  nginx:
-    build: ./nginx
     ports:
-    - "8000:80"
+      - 8000:8000
     depends_on:
-      - app1
-      - app2
+      - postgres
+    env_file:
+        - .env
+    volumes:
+    - ${LOGS_DATA_PATH}:/captcha_solver_app/logs
+  
+  # app1:
+  #   build: .
+  #   expose:
+  #     - 8000
+
+  # app2:
+  #   build: .
+  #   expose:
+  #     - 8000
+
+  # nginx:
+  #   build: ./nginx
+  #   ports:
+  #   - "8000:80"
+  #   depends_on:
+  #     - app1
+  #     - app2
