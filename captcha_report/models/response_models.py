@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, time
 import typing as tp
 
 from pydantic import UUID4, BaseModel, model_validator, Field
@@ -9,6 +9,7 @@ class CaptchaReportListResponse(BaseModel):
     class ReportDetail(BaseModel):
         uuid: UUID4
         report_date: date
+        report_time: time
         status: StatusEnum
         errors: tp.List[tp.Dict[str, tp.Any]] | str | None = Field(default=None)
 

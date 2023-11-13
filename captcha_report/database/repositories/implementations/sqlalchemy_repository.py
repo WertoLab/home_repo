@@ -8,7 +8,10 @@ from kink import inject
 from sqlalchemy import select, func
 
 from captcha_report.database.models import CaptchaReport
-from captcha_report.models.param_models import ReportPaginationParams
+from captcha_report.models.param_models import (
+    ReportPaginationParams,
+    StatisticTimeInterval,
+)
 from captcha_report.models.captcha_report_models import StatusEnum, CaptchaReportInDB
 
 
@@ -31,6 +34,27 @@ class SqlAlchemyCaptchaReportRepository(CaptchaReportRepository):
             .where(
                 CaptchaReport.report_date == report_date,
                 CaptchaReport.status == status,
+            )
+        )
+
+        async with self._connection.session_factory() as session:
+            count = await session.scalar(query)
+            return count
+
+    async def count_reports_by_datetime_and_status(
+        self,
+        report_date: date,
+        status: StatusEnum,
+        time_interval: StatisticTimeInterval,
+    ) -> int:
+        query = (
+            select(func.count())
+            .select_from(CaptchaReport)
+            .where(
+                CaptchaReport.status == status,
+                CaptchaReport.report_date == report_date,
+                CaptchaReport.report_time >= time_interval.start_time,
+                CaptchaReport.report_time <= time_interval.end_time,
             )
         )
 

@@ -1,13 +1,14 @@
 import typing as tp
-
-import uuid
 import asyncio
 
-from uuid import UUID
+from uuid import UUID, uuid4
 from captcha_report.database.repositories import CaptchaReportRepository
 from kink import inject
-from datetime import date
-from captcha_report.models.param_models import ReportPaginationParams
+from datetime import date, datetime
+from captcha_report.models.param_models import (
+    ReportPaginationParams,
+    StatisticTimeInterval,
+)
 from captcha_report.models.captcha_report_models import (
     CaptchaReportStatistic,
     CaptchaReportCreate,
@@ -45,6 +46,47 @@ class CaptchaReportService:
                 self._repository.count_reports_by_date_and_status(
                     report_date=report_date,
                     status=StatusEnum.FAILED,
+                )
+            )
+
+        resolved, not_resolved, failed = (
+            count_resolved.result(),
+            count_not_resolved.result(),
+            count_failed.result(),
+        )
+
+        return CaptchaReportStatistic(
+            resolved=resolved,
+            not_resolved=not_resolved,
+            failed=failed,
+            total=resolved + not_resolved + failed,
+        )
+
+    async def count_reports_statistic_by_datetime(
+        self, report_date: date, time_interval: StatisticTimeInterval
+    ) -> tp.List[CaptchaReportStatistic]:
+        async with asyncio.TaskGroup() as tg:
+            count_resolved = tg.create_task(
+                self._repository.count_reports_by_datetime_and_status(
+                    report_date=report_date,
+                    status=StatusEnum.RESOLVED,
+                    time_interval=time_interval,
+                )
+            )
+
+            count_not_resolved = tg.create_task(
+                self._repository.count_reports_by_datetime_and_status(
+                    report_date=report_date,
+                    status=StatusEnum.NOT_RESOLVED,
+                    time_interval=time_interval,
+                )
+            )
+
+            count_failed = tg.create_task(
+                self._repository.count_reports_by_datetime_and_status(
+                    report_date=report_date,
+                    status=StatusEnum.FAILED,
+                    time_interval=time_interval,
                 )
             )
 
@@ -106,9 +148,10 @@ class CaptchaReportService:
 
         new_report = CaptchaReportInDB(
             status=report_create.status,
-            report_date=date.today(),
-            uuid=uuid.uuid4(),
             information=report_information,
+            uuid=uuid4(),
+            report_date=date.today(),
+            report_time=datetime.utcnow().strftime("%H:%M:%S"),
         )
 
         await self._repository.save_report(new_report)

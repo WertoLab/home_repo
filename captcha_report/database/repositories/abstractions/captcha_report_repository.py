@@ -3,7 +3,10 @@ from abc import abstractmethod
 from datetime import date
 from uuid import UUID
 
-from captcha_report.models.param_models import ReportPaginationParams
+from captcha_report.models.param_models import (
+    ReportPaginationParams,
+    StatisticTimeInterval,
+)
 from captcha_report.models.captcha_report_models import CaptchaReportInDB, StatusEnum
 
 
@@ -11,6 +14,15 @@ class CaptchaReportRepository(tp.Protocol):
     @abstractmethod
     async def count_reports_by_date_and_status(
         self, report_date: date, status: StatusEnum
+    ) -> int:
+        ...
+
+    @abstractmethod
+    async def count_reports_by_datetime_and_status(
+        self,
+        report_date: date,
+        status: StatusEnum,
+        time_interval: StatisticTimeInterval,
     ) -> int:
         ...
 

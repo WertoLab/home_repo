@@ -1,6 +1,6 @@
 import typing as tp
 from pydantic import BaseModel, UUID4, Field
-from datetime import date
+from datetime import date, time
 from enum import Enum
 
 
@@ -21,6 +21,7 @@ class CaptchaReportInformation(BaseModel):
 
 class CaptchaReportInDB(PrimaryKey):
     report_date: date
+    report_time: time
     status: StatusEnum
     information: tp.Dict[str, tp.Any] | None = Field(default=None)
 

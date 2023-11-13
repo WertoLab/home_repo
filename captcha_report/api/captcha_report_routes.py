@@ -2,9 +2,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from kink import di
 
-from datetime import date
 from captcha_report.services.captcha_report_service import CaptchaReportService
-from captcha_report.models.param_models import ReportGetParams
+from captcha_report.models.param_models import ReportGetParams, StatisticDatetimeParams
 from captcha_report.models.response_models import CaptchaReportListResponse
 
 router = APIRouter(prefix="/reports")
@@ -49,8 +48,16 @@ async def get_report_by_uuid(
 
 @router.get("/statistic/")
 async def count_reports_statistic_by_date(
-    iso_date: date,
+    params: StatisticDatetimeParams = Depends(),
     service: CaptchaReportService = Depends(lambda: di[CaptchaReportService]),
 ):
-    statistic = await service.count_reports_statistic_by_date(report_date=iso_date)
+    if params.utc_start_time is not None:
+        statistic = await service.count_reports_statistic_by_datetime(
+            report_date=params.iso_date,
+            time_interval=params.get_time_interval(),
+        )
+
+        return statistic
+
+    statistic = await service.count_reports_statistic_by_date(params.iso_date)
     return statistic
