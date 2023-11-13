@@ -10,8 +10,6 @@ from core.exceptions.api_exception import ApiException
 
 class FastApiExceptionHandler:
     async def __call__(self, request: Request, call_next):
-        # return await call_next(request)
-
         try:
             return await call_next(request)
         except Exception as exc:

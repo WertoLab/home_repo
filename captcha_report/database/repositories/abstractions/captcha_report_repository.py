@@ -1,6 +1,9 @@
 import typing as tp
 from abc import abstractmethod
 from datetime import date
+from uuid import UUID
+
+from captcha_report.models.param_models import ReportPaginationParams
 from captcha_report.models.captcha_report_models import CaptchaReportInDB, StatusEnum
 
 
@@ -15,6 +18,19 @@ class CaptchaReportRepository(tp.Protocol):
     async def get_reports_by_date_and_status(
         self, report_date: date, status: StatusEnum
     ) -> tp.List[CaptchaReportInDB]:
+        ...
+
+    @abstractmethod
+    async def get_reports_by_date_and_status_with_pagination(
+        self,
+        report_date: date,
+        status: StatusEnum,
+        pagination: ReportPaginationParams,
+    ) -> tp.List[CaptchaReportInDB]:
+        ...
+
+    @abstractmethod
+    async def get_report_by_uuid(self, uuid: UUID) -> tp.Optional[CaptchaReportInDB]:
         ...
 
     @abstractmethod

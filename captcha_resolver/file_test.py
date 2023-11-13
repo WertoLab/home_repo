@@ -44,13 +44,13 @@ file_business = {
     "sobel_filter": 70,
 }
 data = json.dumps(file_business)
-# REQUEST_PATH = "http://95.31.6.30:8000/get_captchas"
+REQUEST_PATH = "http://95.31.6.30:8000/get_captchas"
 # REQUEST_PATH1 = "http://localhost:8000/hello"
-LOCAL_REQUEST_PATH = "http://127.0.0.1:8000/get_captchas"
+# LOCAL_REQUEST_PATH = "http://127.0.0.1:8000/get_captchas"
 
 # print(data)
 headers = {"Content-type": "application/json", "Accept": "text/plain"}
-response = r.post(LOCAL_REQUEST_PATH, data=data, headers=headers)
+response = r.post(REQUEST_PATH, data=data, headers=headers)
 coord_str = response.content.decode("UTF-8")
 # result_path = "/Users/andrey/Desktop/ dataset/159.jpg"
 # copy = cv2.imread("/Users/andrey/Desktop/ dataset/69.jpg")

@@ -2,9 +2,12 @@ import typing as tp
 
 import uuid
 import asyncio
+
+from uuid import UUID
 from captcha_report.database.repositories import CaptchaReportRepository
 from kink import inject
 from datetime import date
+from captcha_report.models.param_models import ReportPaginationParams
 from captcha_report.models.captcha_report_models import (
     CaptchaReportStatistic,
     CaptchaReportCreate,
@@ -67,6 +70,34 @@ class CaptchaReportService:
         )
 
         return reports
+
+    async def get_reports_by_date_and_status_with_count(
+        self,
+        report_date: date,
+        status: StatusEnum,
+        pagination: ReportPaginationParams,
+    ) -> tp.Tuple[int, tp.List[CaptchaReportInDB]]:
+        async with asyncio.TaskGroup() as tg:
+            get_reports = tg.create_task(
+                self._repository.get_reports_by_date_and_status_with_pagination(
+                    report_date=report_date,
+                    status=status,
+                    pagination=pagination,
+                )
+            )
+
+            count_reports = tg.create_task(
+                self._repository.count_reports_by_date_and_status(
+                    report_date=report_date,
+                    status=status,
+                )
+            )
+
+        return count_reports.result(), get_reports.result()
+
+    async def get_report_by_uuid(self, uuid: UUID) -> tp.Optional[CaptchaReportInDB]:
+        report = await self._repository.get_report_by_uuid(uuid)
+        return report
 
     async def save_report(self, report_create: CaptchaReportCreate) -> None:
         report_information = None

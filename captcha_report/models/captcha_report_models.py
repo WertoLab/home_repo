@@ -38,8 +38,3 @@ class CaptchaReportStatistic(BaseModel):
 class CaptchaReportCreate(BaseModel):
     status: StatusEnum
     information: CaptchaReportInformation | None = Field(default=None)
-
-
-class CaptchaReportFilter(BaseModel):
-    status: StatusEnum
-    report_date: date
