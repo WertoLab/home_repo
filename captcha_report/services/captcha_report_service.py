@@ -69,11 +69,15 @@ class CaptchaReportService:
         return reports
 
     async def save_report(self, report_create: CaptchaReportCreate) -> None:
+        report_information = None
+        if report_create.information is not None:
+            report_information = report_create.information.model_dump()
+
         new_report = CaptchaReportInDB(
             status=report_create.status,
-            information=report_create.information,
             report_date=date.today(),
             uuid=uuid.uuid4(),
+            information=report_information,
         )
 
         await self._repository.save_report(new_report)

@@ -1,4 +1,5 @@
-from sqlalchemy import Text
+import typing as tp
+from sqlalchemy import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import func
 from captcha_report.database.models.base import Base
@@ -11,7 +12,9 @@ class CaptchaReport(Base):
 
     report_date: Mapped[date] = mapped_column(nullable=False, default=func.current_date)
     status: Mapped[StatusEnum] = mapped_column(nullable=False)
-    information: Mapped[str] = mapped_column(Text, nullable=True)
+    information: Mapped[tp.Dict[str, tp.Any]] = mapped_column(
+        JSON(none_as_null=True), nullable=True
+    )
 
     def __str__(self) -> str:
         return f"{self.uuid} | {self.status} | {self.resolve_datetime}"

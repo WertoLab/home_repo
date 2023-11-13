@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 import typing as tp
 
 from sqlalchemy.ext.asyncio import (
@@ -22,7 +23,13 @@ class SqlAlchemyConnection:
         return cls._instance
 
     def __init__(self, database_url: str, echo: bool = False) -> None:
-        self._engine = create_async_engine(url=database_url, echo=echo)
+        self._engine = create_async_engine(
+            url=database_url,
+            echo=echo,
+            json_serializer=lambda data: json.dumps(data, ensure_ascii=False),
+            json_deserializer=lambda data: json.loads(data),
+        )
+
         self._session_factory = async_sessionmaker(
             self._engine,
             autocommit=False,

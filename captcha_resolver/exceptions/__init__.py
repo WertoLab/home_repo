@@ -1,1 +1,0 @@
-from .invalid_captcha_exception import InvalidCaptchaException

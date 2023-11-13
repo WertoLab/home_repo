@@ -1,6 +1,5 @@
 import pickle
 from ultralytics import YOLO
-from .exceptions.handlers.invalid_captcha_handler import InvalidCaptchaHandler
 from .async_controller import router
 
 
