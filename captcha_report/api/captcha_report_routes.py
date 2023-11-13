@@ -10,7 +10,7 @@ from captcha_report.models.response_models import CaptchaReportListResponse
 router = APIRouter(prefix="/reports")
 
 
-@router.get("/", response_model=CaptchaReportListResponse)
+@router.get("/filter", response_model=CaptchaReportListResponse)
 async def get_reports_by_date_and_status(
     params: ReportGetParams = Depends(),
     service: CaptchaReportService = Depends(lambda: di[CaptchaReportService]),
@@ -38,7 +38,7 @@ async def get_reports_by_date_and_status(
     }
 
 
-@router.get("/{uuid:str}")
+@router.get("/filter/{uuid:str}")
 async def get_report_by_uuid(
     uuid: UUID,
     service: CaptchaReportService = Depends(lambda: di[CaptchaReportService]),
