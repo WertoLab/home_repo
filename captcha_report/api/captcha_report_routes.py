@@ -51,7 +51,7 @@ async def count_reports_statistic_by_date(
     params: StatisticDatetimeParams = Depends(),
     service: CaptchaReportService = Depends(lambda: di[CaptchaReportService]),
 ):
-    if params.utc_start_time is not None:
+    if params.utc_time_interval is not None:
         statistic = await service.count_reports_statistic_by_datetime(
             report_date=params.iso_date,
             time_interval=params.get_time_interval(),

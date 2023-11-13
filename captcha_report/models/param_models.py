@@ -1,5 +1,5 @@
 import typing as tp
-from datetime import date, datetime, time
+from datetime import date, time
 from pydantic import BaseModel
 from captcha_report.models.captcha_report_models import StatusEnum
 
@@ -30,11 +30,11 @@ class StatisticTimeInterval(BaseModel):
 
 class StatisticDatetimeParams(BaseModel):
     iso_date: date
-    utc_start_time: time | None = None
-    utc_end_time: time = datetime.utcnow().strftime("%H:%M:%S")
+    utc_time_interval: str | None = None
 
     def get_time_interval(self) -> StatisticTimeInterval:
+        start_time, end_time = self.utc_time_interval.split("-")
         return StatisticTimeInterval(
-            start_time=self.utc_start_time,
-            end_time=self.utc_end_time,
+            start_time=start_time.strip(),
+            end_time=end_time.strip(),
         )
