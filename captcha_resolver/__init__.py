@@ -4,7 +4,10 @@ from .async_controller import router
 
 
 def init_models():
-    label_encoder = pickle.load(open("captcha_resolver/label_encoder.pkl", "rb"))
+    filename = "captcha_resolver/label_encoder.pkl"
+    with open(filename, "rb") as f:
+        label_encoder = pickle.load(f)
+
     segmentation_model = YOLO("captcha_resolver/AI_weights/captcha_segmentation_v3.pt")
     detection_model = YOLO("captcha_resolver/AI_weights/best_v4.pt")
 
@@ -14,4 +17,7 @@ def init_models():
 segmentation_model: YOLO
 detection_model: YOLO
 
-segmentation_model, detection_model, labal_encoder = init_models()
+try:
+    segmentation_model, detection_model, labal_encoder = init_models()
+except Exception:
+    pass
