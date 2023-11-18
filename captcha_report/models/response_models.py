@@ -15,7 +15,6 @@ class CaptchaReportListResponse(BaseModel):
 
         @model_validator(mode="before")
         def exclude_request_body(data: CaptchaReportInDB):
-            print(data)
             report = data.model_dump()
             if isinstance(data.information, dict):
                 report["errors"] = data.information.get("errors")
