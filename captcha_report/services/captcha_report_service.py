@@ -141,6 +141,20 @@ class CaptchaReportService:
         report = await self._repository.get_report_by_uuid(uuid)
         return report
 
+    async def get_all_errors(
+        self,
+        report_date: date,
+        time_interval: StatisticTimeInterval,
+        pagination: ReportPaginationParams,
+    ) -> tp.List[str]:
+        errors = await self._repository.get_all_errors(
+            report_date=report_date,
+            time_interval=time_interval,
+            pagination=pagination,
+        )
+
+        return errors
+
     async def save_report(self, report_create: CaptchaReportCreate) -> None:
         report_information = None
         if report_create.information is not None:

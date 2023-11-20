@@ -3,8 +3,12 @@ from fastapi import APIRouter, Depends
 from kink import di
 
 from captcha_report.services.captcha_report_service import CaptchaReportService
-from captcha_report.models.param_models import ReportGetParams, StatisticDatetimeParams
 from captcha_report.models.response_models import CaptchaReportListResponse
+from captcha_report.models.param_models import (
+    ReportGetParams,
+    StatisticDatetimeParams,
+    ErrorsGetParams,
+)
 
 router = APIRouter(prefix="/reports")
 
@@ -61,3 +65,17 @@ async def count_reports_statistic_by_date(
 
     statistic = await service.count_reports_statistic_by_date(params.iso_date)
     return statistic
+
+
+@router.get("/errors")
+async def get_all_errors(
+    params: ErrorsGetParams = Depends(),
+    service: CaptchaReportService = Depends(lambda: di[CaptchaReportService]),
+):
+    errors = await service.get_all_errors(
+        report_date=params.iso_date,
+        time_interval=params.get_time_interval(),
+        pagination=params.get_pagination(),
+    )
+
+    return errors

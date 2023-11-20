@@ -46,5 +46,14 @@ class CaptchaReportRepository(tp.Protocol):
         ...
 
     @abstractmethod
+    async def get_all_errors(
+        self,
+        report_date: date,
+        time_interval: StatisticTimeInterval,
+        pagination: ReportPaginationParams,
+    ) -> tp.List[str]:
+        ...
+
+    @abstractmethod
     async def save_report(self, report: CaptchaReportInDB) -> None:
         ...

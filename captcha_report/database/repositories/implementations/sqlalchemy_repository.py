@@ -6,6 +6,7 @@ from captcha_report.database.connection import SqlAlchemyConnection
 from captcha_report.database.repositories import CaptchaReportRepository
 from kink import inject
 from sqlalchemy import select, func
+from sqlalchemy.sql import text
 
 from captcha_report.database.models import CaptchaReport
 from captcha_report.models.param_models import (
@@ -100,6 +101,32 @@ class SqlAlchemyCaptchaReportRepository(CaptchaReportRepository):
             report = await session.scalar(query)
             if report is not None:
                 return report.to_domain_model()
+
+    async def get_all_errors(
+        self,
+        report_date: date,
+        pagination: ReportPaginationParams,
+        time_interval: StatisticTimeInterval,
+    ):
+        query = """SELECT DISTINCT information ->> 'errors' FROM captcha_report
+                        WHERE report_date = :report_date
+                            AND 
+                        report_time BETWEEN :start_time AND :end_time
+                    LIMIT :limit OFFSET :offset;"""
+
+        async with self._connection.session_factory() as session:
+            errors = await session.execute(
+                text(query),
+                {
+                    "report_date": report_date,
+                    "start_time": time_interval.start_time,
+                    "end_time": time_interval.end_time,
+                    "limit": pagination.limit,
+                    "offset": pagination.offset,
+                },
+            )
+
+            return [error[0] for error in errors.fetchall()]
 
     async def save_report(self, report: CaptchaReportInDB):
         report = CaptchaReport(**report.model_dump())
