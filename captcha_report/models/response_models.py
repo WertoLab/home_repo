@@ -21,5 +21,8 @@ class CaptchaReportListResponse(BaseModel):
 
             return report
 
-    total_count: int
     reports: tp.List[ReportDetail]
+
+
+class CaptchaReportListResponseWithCount(CaptchaReportListResponse):
+    total_count: int

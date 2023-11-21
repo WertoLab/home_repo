@@ -113,6 +113,23 @@ class CaptchaReportService:
 
         return reports
 
+    async def get_failed_reports_by_datetime_and_status(
+        self,
+        report_date: date,
+        time_interval: StatisticTimeInterval,
+        pagination: ReportPaginationParams,
+    ) -> tp.List[CaptchaReportInDB]:
+        reports = (
+            await self._repository.get_reports_by_datetime_and_status_with_pagination(
+                report_date=report_date,
+                time_interval=time_interval,
+                pagination=pagination,
+                status=StatusEnum.FAILED,
+            )
+        )
+
+        return reports
+
     async def get_reports_by_date_and_status_with_count(
         self,
         report_date: date,

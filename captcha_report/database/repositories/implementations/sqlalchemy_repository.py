@@ -95,6 +95,29 @@ class SqlAlchemyCaptchaReportRepository(CaptchaReportRepository):
             reports = await session.scalars(query)
             return [report.to_domain_model() for report in reports]
 
+    async def get_reports_by_datetime_and_status_with_pagination(
+        self,
+        report_date: date,
+        time_interval: StatisticTimeInterval,
+        status: StatusEnum,
+        pagination: ReportPaginationParams,
+    ):
+        query = (
+            select(CaptchaReport)
+            .where(
+                CaptchaReport.status == status,
+                CaptchaReport.report_date == report_date,
+                CaptchaReport.report_time >= time_interval.start_time,
+                CaptchaReport.report_time <= time_interval.end_time,
+            )
+            .limit(pagination.limit)
+            .offset(pagination.offset)
+        )
+
+        async with self._connection.session_factory() as session:
+            reports = await session.scalars(query)
+            return [report.to_domain_model() for report in reports]
+
     async def get_report_by_uuid(self, uuid: UUID) -> tp.Optional[CaptchaReportInDB]:
         query = select(CaptchaReport).where(CaptchaReport.uuid == uuid)
         async with self._connection.session_factory() as session:

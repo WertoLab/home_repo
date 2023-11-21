@@ -42,6 +42,16 @@ class CaptchaReportRepository(tp.Protocol):
         ...
 
     @abstractmethod
+    async def get_reports_by_datetime_and_status_with_pagination(
+        self,
+        report_date: date,
+        time_interval: StatisticTimeInterval,
+        status: StatusEnum,
+        pagination: ReportPaginationParams,
+    ) -> tp.List[CaptchaReportInDB]:
+        ...
+
+    @abstractmethod
     async def get_report_by_uuid(self, uuid: UUID) -> tp.Optional[CaptchaReportInDB]:
         ...
 

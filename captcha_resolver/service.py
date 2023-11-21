@@ -9,7 +9,7 @@ from captcha_resolver.AI_models.ClassificationModel import AlexNet
 import torch
 import numpy as np
 import cv2
-import pickle
+
 from numpy import sum
 from torchvision import transforms
 import captcha_resolver as inited_models
@@ -174,8 +174,6 @@ class Service:
         ]
         label_encoder = LabelEncoder()
         label_encoder.fit(your_classes)
-        with open("captcha_resolver/label_encoder.pkl", "wb") as f:
-            pickle.dump(label_encoder, f)
 
         alexnet = AlexNet()
         alexnet.load_state_dict(
@@ -186,7 +184,6 @@ class Service:
         )
         alexnet.eval()
 
-        label_encoder = inited_models.labal_encoder
         model = alexnet
 
         preprocess = transforms.Compose(
@@ -202,13 +199,7 @@ class Service:
         input_tensor = preprocess(image_input).unsqueeze(0)
         probs = self.predict_one_sample(model, input_tensor)
         predicted_class_idx = np.argmax(probs, axis=1)[0]
-
-        if label_encoder:
-            predicted_class = label_encoder.classes_[predicted_class_idx]
-        else:
-            predicted_class = str(predicted_class_idx)
-
-        return predicted_class
+        return your_classes[predicted_class_idx]
 
     def put_object_to_s3(self, new_object, content):
         session = boto3.session.Session()

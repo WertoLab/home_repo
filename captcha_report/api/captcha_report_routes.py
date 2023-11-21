@@ -3,7 +3,10 @@ from fastapi import APIRouter, Depends
 from kink import di
 
 from captcha_report.services.captcha_report_service import CaptchaReportService
-from captcha_report.models.response_models import CaptchaReportListResponse
+from captcha_report.models.response_models import (
+    CaptchaReportListResponse,
+    CaptchaReportListResponseWithCount,
+)
 from captcha_report.models.param_models import (
     ReportGetParams,
     StatisticDatetimeParams,
@@ -13,7 +16,7 @@ from captcha_report.models.param_models import (
 router = APIRouter(prefix="/reports")
 
 
-@router.get("/filter", response_model=CaptchaReportListResponse)
+@router.get("/filter", response_model=CaptchaReportListResponseWithCount)
 async def get_reports_by_date_and_status(
     params: ReportGetParams = Depends(),
     service: CaptchaReportService = Depends(lambda: di[CaptchaReportService]),
@@ -79,3 +82,19 @@ async def get_all_errors(
     )
 
     return errors
+
+
+@router.get("/failed", response_model=CaptchaReportListResponse)
+async def get_failed_reports(
+    params: ErrorsGetParams = Depends(),
+    service: CaptchaReportService = Depends(lambda: di[CaptchaReportService]),
+):
+    failed_reports = await service.get_failed_reports_by_datetime_and_status(
+        report_date=params.iso_date,
+        time_interval=params.get_time_interval(),
+        pagination=params.get_pagination(),
+    )
+
+    return {
+        "reports": failed_reports,
+    }
