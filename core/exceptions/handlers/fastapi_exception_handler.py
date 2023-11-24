@@ -45,7 +45,7 @@ class FastApiExceptionHandler:
                 },
             )
 
-        internal_error_logger.error(str(exc))
+        internal_error_logger.opt(exception=True).error(str(exc))
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
