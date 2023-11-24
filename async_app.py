@@ -4,6 +4,7 @@ import captcha_resolver
 
 from contextlib import asynccontextmanager
 from core.exceptions.handlers.fastapi_exception_handler import FastApiExceptionHandler
+from core.middlewares.fastapi_client_ip_middleware import FastApiClientIpMiddleware
 from captcha_report.database.utils.create_tables import create_captcha_report_tables
 from fastapi import FastAPI
 from kink import inject
@@ -17,8 +18,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
 app.include_router(captcha_report.router)
 app.include_router(captcha_resolver.router)
+
+app.middleware("http")(FastApiClientIpMiddleware())
 app.middleware("http")(FastApiExceptionHandler())
 
 

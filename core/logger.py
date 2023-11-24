@@ -22,5 +22,15 @@ logger.add(
     filter=lambda record: record["extra"]["name"] == "internal_errors_log",
 )
 
+logger.add(
+    "logs/client_ips.log",
+    format="{time} | {level} | {message}",
+    level="INFO",
+    rotation="1 day",
+    compression="zip",
+    filter=lambda record: record["extra"]["name"] == "client_ips",
+)
+
 internal_error_logger = logger.bind(name="internal_errors_log")
 validation_error_logger = logger.bind(name="validation_error_log")
+ip_logger = logger.bind(name="client_ips")
