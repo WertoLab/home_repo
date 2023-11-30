@@ -1,6 +1,6 @@
 import pickle
 from ultralytics import YOLO
-from .async_controller import router
+
 
 
 def init_models():

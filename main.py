@@ -1,10 +1,9 @@
-
 from captcha_resolver.controller import init_routes
 from captcha_resolver.service import Service
 from gunicorn.app.base import BaseApplication
-from flask import Flask
+from fastapi import FastAPI
 
-app = Flask(__name__)
+app = FastAPI()
 
 service = Service()
 init_routes(app, service)
@@ -24,11 +23,9 @@ class GunicornApp(BaseApplication):
     def load(self):
         return self.application
 
-
+'''
 if __name__ == '__main__':
-    
-    #app.run(host='0.0.0.0', port=8000)
-
+    # app.run(host='0.0.0.0', port=8000)
 
     options = {
         'bind': '0.0.0.0:8000',
@@ -36,4 +33,5 @@ if __name__ == '__main__':
         'worker_class': 'uvicorn.workers.UvicornWorker',
         'timeout': 60,
     }
-    g=GunicornApp(app, options).run()
+    g = GunicornApp(app, options).run()
+'''
