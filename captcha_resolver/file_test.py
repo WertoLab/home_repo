@@ -45,8 +45,8 @@ file_business = {
 }
 data = json.dumps(file_business)
 REQUEST_PATH = "http://95.31.6.30:8000/get_captchas"
-# REQUEST_PATH1 = "http://localhost:8000/hello"
-LOCAL_REQUEST_PATH = "http://127.0.0.1:8000/get_captchas"
+REQUEST_PATH1 = "http://localhost:8000/hello"
+LOCAL_REQUEST_PATH = "http://localhost:8000/get_captchas"
 
 # print(data)
 headers = {"Content-type": "application/json", "Accept": "text/plain"}
@@ -59,3 +59,16 @@ coord_str = response.content.decode("UTF-8")
 # cv2.imwrite(result_path, copy)
 # print(response.status_code)
 print(coord_str)
+
+'''
+upstream loadbalancer {
+    server app1:8000 weight=5;
+    server app2:8000 weight=5;
+}
+
+server {
+    location / {
+        proxy_pass http://loadbalancer;
+    }
+}
+'''

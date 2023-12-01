@@ -1,31 +1,33 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:14.1-alpine
-    restart: always
-    volumes:
-    - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
-    expose:
-      - ${POSTGRES_PORT}
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB_NAME}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    env_file:
-        - .env
+    microservice:
+        build:
+            context: .
+        image: microservice
+        restart: always
+        expose:
+            - "8000"
+        deploy:
+            replicas: 3
 
-  app:
-    build: .
-    ports:
-      - 8000:8000
-    depends_on:
-      - postgres
-    env_file:
-        - .env
-    volumes:
-    - ${LOGS_DATA_PATH}:/captcha_solver_app/logs
-  
+
+    nginx-balancer:
+        build: ./nginx
+        image: nginx
+        container_name: nginx-balancer
+        restart: always
+
+        depends_on:
+            - microservice
+        ports:
+            - "8000:80"
+
+
+#version: '3.8'
+
+#services:
+
   # app1:
   #   build: .
   #   expose:
@@ -43,3 +45,8 @@ services:
   #   depends_on:
   #     - app1
   #     - app2
+
+
+
+#    volumes:
+#            - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro

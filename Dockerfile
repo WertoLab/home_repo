@@ -10,4 +10,5 @@ COPY . /captcha_solver_app
 
 EXPOSE 8000
 
-CMD gunicorn main:app --workers 5 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+CMD gunicorn main:app --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+#CMD [ "gunicorn", "--bind", "0.0.0.0:8000", "main:app" ]
