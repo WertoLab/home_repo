@@ -71,4 +71,75 @@ server {
         proxy_pass http://loadbalancer;
     }
 }
+
+
+
+
+ microservice3:
+        build:
+            context: .
+        restart: always
+        expose:
+            - "8002"
+
+    microservice4:
+        build:
+            context: .
+        restart: always
+        expose:
+            - "8003"
+
+    microservice5:
+        build:
+            context: .
+        restart: always
+        expose:
+            - "8004"
+            
+            
+    - microservice3
+            - microservice4
+            - microservice5
+            
+            
+            
+            
+    
+upstream loadbalancer3 {
+    server microservice3:8002;
+}
+
+upstream loadbalancer4 {
+    server microservice4:8003;
+}
+
+upstream loadbalancer5{
+    server microservice5:8004;
+
+}
+
+
+
+server {
+        listen 80;
+        location / {
+          proxy_pass    http://loadbalancer3;
+        }
+}
+
+server {
+        listen 80;
+        location / {
+          proxy_pass    http://loadbalancer4;
+        }
+}
+
+server {
+        listen 80;
+        location / {
+          proxy_pass    http://loadbalancer5;
+        }
+}
+
+
 '''

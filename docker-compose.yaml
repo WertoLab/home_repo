@@ -1,15 +1,13 @@
 version: '3.8'
 
 services:
+
+
     microservice:
         build:
             context: .
-        image: microservice
         restart: always
-        expose:
-            - "8000"
-        deploy:
-            replicas: 3
+
 
 
     nginx-balancer:
@@ -21,7 +19,7 @@ services:
         depends_on:
             - microservice
         ports:
-            - "8000:80"
+            - "8000:8000"
 
 
 #version: '3.8'
