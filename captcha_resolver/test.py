@@ -75,7 +75,7 @@ headers = {"Content-type": "application/json", "Accept": "text/plain"}
 
 
 def post():
-    response = r.post(LOCAL_REQUEST_PATH, data=data, headers=headers)
+    response = r.post(REQUEST_PATH, data=data, headers=headers)
     coord_str = response.content.decode("UTF-8")
     print(coord_str)
 
@@ -83,15 +83,15 @@ times = []
 
 for i in range(1,1000):
     times.append(i)
+while(True):
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        times = []
+        for i in range(1, 1000):
+            times.append(i)
+        results = [executor.submit(post()) for time in times]
 
-with concurrent.futures.ThreadPoolExecutor() as executor:
-    times = []
-    for i in range(1, 1000):
-        times.append(i)
-    results = [executor.submit(post()) for time in times]
-
-    for f in concurrent.futures.as_completed(results):
-        print(f.result())
+        for f in concurrent.futures.as_completed(results):
+            print(f.result())
 
 x = threading.Thread(target=post(), args=())
 x.start()

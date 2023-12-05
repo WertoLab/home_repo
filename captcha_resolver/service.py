@@ -1,8 +1,10 @@
 import base64
+import json
 import os
 import shutil
 import uuid
 import boto3
+import numpy
 
 from captcha_resolver.preprocess import preprocess_captcha_sobel
 from captcha_resolver.AI_models.ClassificationModel import AlexNet
@@ -17,6 +19,8 @@ import captcha_resolver as inited_models
 from sklearn.preprocessing import LabelEncoder
 from captcha_resolver.data.filters import RequestBusiness
 import Config
+from captcha_resolver.controller import detection_onnx_model
+from captcha_resolver.controller import segmentation_onnx_model
 import onnx
 import onnxruntime as ort
 from captcha_resolver.yolov8 import YOLOv8
@@ -37,26 +41,111 @@ def b64_decode(im_b64: str):
 
 
 class Service:
-    def get_onnx_inference(self, data):
-        onnx_model = onnx.load("captcha_resolver/AI_weights/best_v3.onnx")
-        onnx.checker.check_model(onnx_model)
-        ort_sess = ort.InferenceSession("captcha_resolver/AI_weights/best_v3.onnx")
+    your_classes = [
+        "arrow",
+        "book",
+        "bucket",
+        "clock",
+        "cloud",
+        "compass",
+        "electro",
+        "eye",
+        "face",
+        "factory",
+        "fire",
+        "flag",
+        "hand",
+        "heart",
+        "house",
+        "key",
+        "keyboard",
+        "light",
+        "lightning",
+        "lock",
+        "magnifier",
+        "mail",
+        "microphone",
+        "monitor",
+        "paper",
+        "paperclip",
+        "pen",
+        "person",
+        "photo",
+        "pill",
+        "scissors",
+        "shop_cart",
+        "sound",
+        "star",
+        "store_cart",
+        "t-shirt",
+        "ticket",
+        "traffic_light",
+        "umbrella",
+        "water",
+        "wrench",
+    ]
+
+    def get_coordinates_onnx(self, name, boxes, class_ids):
+        for i in range(len(class_ids)):
+            if (self.your_classes[class_ids[i]] == name):
+                return (int(boxes[i][2]) + int(boxes[i][0])) / 2, (int(boxes[i][3]) + int(boxes[i][1])) / 2
+
+        return None, None
+
+    def get_onnx_inference(self, captcha, icons, model):
+        copy = captcha.copy()
+        sequence = []
+        index = 1
+        yolov8 = model
+        boxes, scores, class_ids = yolov8(captcha)
+
+        '''
+        print(boxes[0])
+        print(class_ids[0])
+        print(self.your_classes[class_ids[0]])
+        # print(boxes[0][0])
+        for box in boxes:
+            cv2.rectangle(
+                captcha,
+                (int(box[0]), int(box[1])),
+                (int(box[2]), int(box[3])),
+                (255, 0, 0),
+                2,
+            )
+        '''
+        for icon in icons:
+            name = self.classify_image(icon)
+            x, y = self.get_coordinates_onnx(name, boxes, class_ids)
+            sequence.append({"x": x, "y": y})
+            index += 1
+
+        #print(sequence)
+
+        return sequence
+
+    def get_onnx_solver(self, data):
+        #onnx_model = onnx.load("captcha_resolver/AI_weights/best_v3.onnx")
+        #onnx.checker.check_model(onnx_model)
+        #ort_sess = ort.InferenceSession("captcha_resolver/AI_weights/best_v3.onnx")
         captcha = b64_decode(data.screenshot_captcha)
-        captcha = cv2.resize(captcha, (480, 480))
-        captcha = self.sobel_filter(70, captcha)
-        # icons = preprocess_captcha_sobel(icons=b64_decode(data.screenshot_icons))
+        # captcha = cv2.resize(captcha, (480, 480))
+        # captcha = self.sobel_filter(70, captcha)
+        icons = preprocess_captcha_sobel(icons=b64_decode(data.screenshot_icons))
         # outputs = ort_sess.run(None, {'images': captcha.reshape(1, 3, 480, 480).astype(numpy.float32)},)
         # print(np.array(outputs).shape)
-
-        model_path = "captcha_resolver/AI_weights/captcha_segmentation.onnx"
-        yolov8_detector = YOLOv8(model_path, conf_thres=0.5, iou_thres=0.8)
+        detections = self.get_onnx_inference(captcha, icons, detection_onnx_model)
+        segmentations = self.get_onnx_inference(captcha, icons, segmentation_onnx_model)
+        '''
+        yolov8_detection = YOLOv8("captcha_resolver/AI_weights/best_v3.onnx", conf_thres=0.5, iou_thres=0.8)
 
         # Read image
 
         # Detect Objects
-        boxes, scores, class_ids = yolov8_detector(captcha)
+        boxes_d, scores_d, class_ids_d = yolov8_detection(captcha)
+        boxes_s, scores_s, class_ids_s = yolov8_segmentation(captcha)
+        
         # print(boxes[0][0])
-        for box in boxes:
+        for box in boxes_d:
             cv2.rectangle(
                 captcha,
                 (int(box[0]), int(box[1])),
@@ -67,7 +156,8 @@ class Service:
         # print(boxes)
         # print(class_ids)
         cv2.imwrite("answer.png", captcha)
-        return {"status": "ok"}
+        '''
+        return self.merge(detections, segmentations, captcha.copy())
 
     def get_boxes(self, result):
         boxes = []
@@ -96,9 +186,9 @@ class Service:
 
         for i in range(0, rows - 2):
             for j in range(0, columns - 2):
-                v = sum(sum(G_x * img[i : i + 3, j : j + 3]))
-                h = sum(sum(G_y * img[i : i + 3, j : j + 3]))
-                mag[i + 1, j + 1] = np.sqrt((v**2) + (h**2))
+                v = sum(sum(G_x * img[i: i + 3, j: j + 3]))
+                h = sum(sum(G_y * img[i: i + 3, j: j + 3]))
+                mag[i + 1, j + 1] = np.sqrt((v ** 2) + (h ** 2))
                 if mag[i + 1, j + 1] < threshold:
                     mag[i + 1, j + 1] = 0
 
@@ -229,7 +319,7 @@ class Service:
             get_object_response = s3.get_object(Bucket="capchas-bucket", Key=key["Key"])
 
             with open(
-                "download_captchas/" + key["Key"].split("/")[-1][:-4] + ".png", "wb"
+                    "download_captchas/" + key["Key"].split("/")[-1][:-4] + ".png", "wb"
             ) as fh:
                 fh.write(base64.decodebytes(get_object_response["Body"].read()))
         shutil.make_archive("captchas", "zip", "download_captchas")
@@ -249,7 +339,7 @@ class Service:
         return {"status": "deleted"}
 
     def get_captcha_solve_sequence_segmentation_sobel(
-        self, request: RequestBusiness, captcha, icons
+            self, request: RequestBusiness, captcha, icons
     ):
         copy = captcha.copy()
         sequence = []
@@ -352,7 +442,7 @@ class Service:
     """
 
     def get_captcha_solve_sequence_hybrid_merge_business(
-        self, request: RequestBusiness
+            self, request: RequestBusiness
     ):
         captcha = b64_decode(request.screenshot_captcha)
         icons = preprocess_captcha_sobel(icons=b64_decode(request.screenshot_icons))
@@ -374,14 +464,29 @@ class Service:
             request, captcha, icons
         )
 
+        # b64_string_discolored = base64.b64encode(filtered_captcha).decode('UTF-8')
+        # b64_string_answer = base64.b64encode(copy).decode('UTF-8')
+        # cv2.imwrite("answer.png", copy)
+
+        return self.merge(sequence, segment, copy)
+
+    def merge(self, sequence: [dict], segment: [dict], copy):
+
+        final_sequence = []
+        #print(sequence)
+        #print(segment)
+        error = False
+
         for i in range(len(sequence)):
             if segment[i].get("x") is None and sequence[i].get("x") is not None:
                 final_sequence.append(sequence[i])
             else:
                 final_sequence.append(segment[i])
-        for i in range(len(sequence)):
+        #print(len(final_sequence))
+        for i in range(len(final_sequence)):
             if final_sequence[i].get("x") is None:
                 error = True
+            '''
             if final_sequence[i].get("x") is not None:
                 cv2.circle(
                     copy,
@@ -402,9 +507,5 @@ class Service:
                     (0, 0, 255),
                     2,
                 )
-
-        # b64_string_discolored = base64.b64encode(filtered_captcha).decode('UTF-8')
-        # b64_string_answer = base64.b64encode(copy).decode('UTF-8')
-        # cv2.imwrite("answer.png", copy)
-
+                '''
         return final_sequence, error

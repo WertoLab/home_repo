@@ -17,6 +17,25 @@ class YOLOv8:
     def __call__(self, image):
         return self.detect_objects(image)
 
+    def sobel_filter(self, threshold, img1):
+        img = cv2.cvtColor(img1, cv2.COLOR_RGB2GRAY)
+
+        G_x = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
+        G_y = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
+        rows, columns = img.shape
+        mag = np.zeros(img.shape, dtype=np.float32)
+
+        for i in range(0, rows - 2):
+            for j in range(0, columns - 2):
+                v = sum(sum(G_x * img[i: i + 3, j: j + 3]))
+                h = sum(sum(G_y * img[i: i + 3, j: j + 3]))
+                mag[i + 1, j + 1] = np.sqrt((v ** 2) + (h ** 2))
+                if mag[i + 1, j + 1] < threshold:
+                    mag[i + 1, j + 1] = 0
+
+        processed_image = mag.astype(np.uint8)
+        return cv2.cvtColor(processed_image, cv2.COLOR_GRAY2BGR)
+
     def initialize_model(self, path):
         self.session = onnxruntime.InferenceSession(
             path, providers=onnxruntime.get_available_providers()
@@ -26,6 +45,7 @@ class YOLOv8:
         self.get_output_details()
 
     def detect_objects(self, image):
+        print(image.shape)
         input_tensor = self.prepare_input(image)
 
         # Perform inference on the image
@@ -41,7 +61,10 @@ class YOLOv8:
         input_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Resize input image
+        input_img = self.sobel_filter(70, input_img)
         input_img = cv2.resize(input_img, (self.input_width, self.input_height))
+        print(input_img.shape)
+
 
         # Scale input pixel values to 0 to 1
         input_img = input_img / 255.0

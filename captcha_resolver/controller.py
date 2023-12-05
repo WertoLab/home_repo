@@ -6,19 +6,24 @@ import json
 
 from ultralytics import YOLO
 from captcha_resolver.data.filters import *
-from fastapi import APIRouter,Response
+from fastapi import APIRouter, Response
+from captcha_resolver.yolov8 import YOLOv8
 
 
 def init_models():
     segmentation_model = YOLO("captcha_resolver/AI_weights/captcha_segmentation_v2.pt")
     detection_model = YOLO("captcha_resolver/AI_weights/best_v3.pt")
-    return segmentation_model, detection_model
+    segmentation_onnx_model = YOLOv8("captcha_resolver/AI_weights/captcha_segmentation.onnx")
+    detection_onnx_model = YOLOv8("captcha_resolver/AI_weights/best_v3.onnx")
+    return segmentation_model, detection_model, segmentation_onnx_model, detection_onnx_model
 
 
 segmentation_model: YOLO
 detection_model: YOLO
+segmentation_onnx_model: YOLOv8
+detection_onnx_model: YOLOv8
 
-segmentation_model, detection_model = init_models()
+segmentation_model, detection_model, segmentation_onnx_model, detection_onnx_model = init_models()
 
 
 def init_routes(app, service):
@@ -60,4 +65,9 @@ def init_routes(app, service):
     @app.route("/onnx_check", methods=["POST"])
     async def get_onnx_check(request: Request):
         rio = RequestBusiness.fromJson(await request.json())
-        return service.get_onnx_inference(rio)
+        sequence, error = service.get_onnx_solver(rio)
+        if error:
+            return Response(content=json.dumps({"status": 0, "request": "ERROR_CAPTCHA_UNSOLVABLE"}),
+                            media_type="application/json")  # json.dumps({"status": 0, "request": "ERROR_CAPTCHA_UNSOLVABLE"})
+        # return Response(content=json.dumps({"status": 1, "request": sequence}), media_type='application/json')
+        return Response(content=json.dumps({"status": 1, "request": sequence}), media_type="application/json")
