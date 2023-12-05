@@ -50,7 +50,7 @@ def init_routes(app, service):
             service.get_captcha_solve_sequence_segmentation_sobel(request=rio)
         )
 
-    @app.post("/get_captchas")
+    @app.post("/get_captchas1")
     async def get_captcha_solve_sequence_business(request: Request):
         rio = RequestBusiness.fromJson(await request.json())
         # print(request.environ)
@@ -62,7 +62,7 @@ def init_routes(app, service):
         # return Response(content=json.dumps({"status": 1, "request": sequence}), media_type='application/json')
         return Response(content=json.dumps({"status": 1, "request": sequence}), media_type="application/json")
 
-    @app.route("/onnx_check", methods=["POST"])
+    @app.route("/get_captchas", methods=["POST"])
     async def get_onnx_check(request: Request):
         rio = RequestBusiness.fromJson(await request.json())
         sequence, error = service.get_onnx_solver(rio)
