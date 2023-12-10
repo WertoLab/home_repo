@@ -15,7 +15,7 @@ import Config
 
 from captcha_resolver.data.filters import RequestBusiness
 from captcha_resolver.preprocess import preprocess_captcha_sobel
-from captcha_resolver.AI_models.ClassificationModel import AlexNet
+
 
 from ultralytics import YOLO
 
@@ -26,7 +26,59 @@ segmentation_model: YOLO
 detection_model: YOLO
 segmentation_onnx_model: YOLOv8
 detection_onnx_model: YOLOv8
-segmentation_model, detection_model, segmentation_onnx_model, detection_onnx_model = init_models()
+segmentation_model, detection_model, segmentation_onnx_model, detection_onnx_model, alexnet = init_models()
+
+# Список всех возможных признаков
+your_classes = [
+    "arrow",
+    "book",
+    "bucket",
+    "clock",
+    "cloud",
+    "compass",
+    "electro",
+    "eye",
+    "face",
+    "factory",
+    "fire",
+    "flag",
+    "hand",
+    "heart",
+    "house",
+    "key",
+    "keyboard",
+    "light",
+    "lightning",
+    "lock",
+    "magnifier",
+    "mail",
+    "microphone",
+    "monitor",
+    "paper",
+    "paperclip",
+    "pen",
+    "person",
+    "photo",
+    "pill",
+    "scissors",
+    "shop_cart",
+    "sound",
+    "star",
+    "store_cart",
+    "t-shirt",
+    "ticket",
+    "traffic_light",
+    "umbrella",
+    "water",
+    "wrench",
+]
+label_encoder = LabelEncoder()
+label_encoder.fit(your_classes)
+preprocess = transforms.Compose([
+    transforms.ToPILImage(),
+    transforms.Resize((227, 227)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
 
 def readb64(encoded_data):
@@ -55,57 +107,10 @@ def b64_decode(im_b64: str):
             Декодированное изображение в виде массива NumPy.
     """
     img_bytes = base64.b64decode(im_b64.encode("utf-8"))
-    img = readb64(img_bytes)
-    img_arr = np.asarray(img)
-    img_bgr = cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
-    return img_bgr
+    return cv2.imdecode(np.frombuffer(img_bytes, np.uint8), cv2.IMREAD_COLOR)
 
 
 class Service:
-    your_classes = [
-        "arrow",
-        "book",
-        "bucket",
-        "clock",
-        "cloud",
-        "compass",
-        "electro",
-        "eye",
-        "face",
-        "factory",
-        "fire",
-        "flag",
-        "hand",
-        "heart",
-        "house",
-        "key",
-        "keyboard",
-        "light",
-        "lightning",
-        "lock",
-        "magnifier",
-        "mail",
-        "microphone",
-        "monitor",
-        "paper",
-        "paperclip",
-        "pen",
-        "person",
-        "photo",
-        "pill",
-        "scissors",
-        "shop_cart",
-        "sound",
-        "star",
-        "store_cart",
-        "t-shirt",
-        "ticket",
-        "traffic_light",
-        "umbrella",
-        "water",
-        "wrench",
-    ]
-
     def get_coordinates_onnx(self, name, boxes, class_ids):
         """
             Извлекает координаты центра объекта с заданным именем из массива bounding boxes и class_ids.
@@ -119,7 +124,7 @@ class Service:
                 Координаты центра объекта с заданным именем, если такой объект найден, иначе None, None.
         """
         for i in range(len(class_ids)):
-            if self.your_classes[class_ids[i]] == name:
+            if your_classes[class_ids[i]] == name:
                 return (int(boxes[i][2]) + int(boxes[i][0])) / 2, (int(boxes[i][3]) + int(boxes[i][1])) / 2
 
         return None, None
@@ -173,16 +178,15 @@ class Service:
             Returns:
                 Массив ограничивающих рамок в формате [[x_up, y_up, x_bottom, y_bottom], ...].
         """
-        boxes = []
         all_params = result[0].boxes
-        for i in range(len(result[0].boxes.conf.cpu())):
-            if np.array(all_params.conf.cpu()[i]) > 0.05:
-                x_up, y_up = (all_params.xyxy.cpu()[i][0].numpy(),
-                              all_params.xyxy.cpu()[i][1].numpy(),)
-                x_bottom, y_bottom = (all_params.xyxy.cpu()[i][2].numpy(),
-                                      all_params.xyxy.cpu()[i][3].numpy(),)
-                boxes.append([x_up, y_up, x_bottom, y_bottom])
-        return boxes
+        # Перемещаем данные в CPU и преобразуем в NumPy один раз, чтобы избежать многократных вызовов
+        confs = all_params.conf.cpu().numpy()
+        boxes = all_params.xyxy.cpu().numpy()
+        # Используем маску для фильтрации рамок с уверенностью выше порога
+        mask = confs > 0.05
+        filtered_boxes = boxes[mask]
+        # Преобразуем полученные рамки в нужный формат
+        return filtered_boxes[:, :4].tolist()  # [:4] включает x_up, y_up, x_bottom, y_bottom
 
     def sobel_filter(self, threshold, img):
         """
@@ -195,20 +199,40 @@ class Service:
             Returns:
                 Обработанное изображение с выделенными краями.
         """
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        G_x = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
-        G_y = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
-        rows, columns = img.shape
-        mag = np.zeros(img.shape, dtype=np.float32)
-        for i in range(0, rows - 2):
-            for j in range(0, columns - 2):
-                v = np.sum(np.sum(G_x * img[i: i + 3, j: j + 3]))
-                h = np.sum(np.sum(G_y * img[i: i + 3, j: j + 3]))
-                mag[i + 1, j + 1] = np.sqrt((v ** 2) + (h ** 2))
-                if mag[i + 1, j + 1] < threshold:
-                    mag[i + 1, j + 1] = 0
-        processed_image = mag.astype(np.uint8)
-        return cv2.cvtColor(processed_image, cv2.COLOR_GRAY2BGR)
+        def efficient_sobel(img, threshold):
+            # Конвертация изображения в оттенки серого
+            gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            # Применение фильтра Собеля для вычисления градиента по оси X и Y
+            sobelx = cv2.Sobel(gray_img, cv2.CV_32F, 1, 0, ksize=3)
+            sobely = cv2.Sobel(gray_img, cv2.CV_32F, 0, 1, ksize=3)
+            # Вычисление магнитуды градиента
+            mag = np.sqrt(sobelx ** 2 + sobely ** 2)
+            # Аналог паддинга нулями
+            mag[0, :] = mag[-1, :] = mag[:, 0] = mag[:, -1] = 0
+            # Применение порога
+            _, mag_thresh = cv2.threshold(mag, threshold, 255, cv2.THRESH_TOZERO)
+            # Преобразование магнитуды градиента в 8-битное изображение
+            # Используем нормализацию для преобразования в диапазон 0-255
+            processed_image = cv2.cvtColor(mag_thresh.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+            return processed_image
+
+        efficient = efficient_sobel(img, threshold)
+        # Временно закомментируем эти строки, так как перешли на более эффективный фильтр Собеля
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # G_x = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
+        # G_y = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
+        # rows, columns = img.shape
+        # mag = np.zeros(img.shape, dtype=np.float32)
+        # for i in range(0, rows - 2):
+        #     for j in range(0, columns - 2):
+        #         v = sum(sum(G_x * img[i: i + 3, j: j + 3]))
+        #         h = sum(sum(G_y * img[i: i + 3, j: j + 3]))
+        #         mag[i + 1, j + 1] = np.sqrt((v ** 2) + (h ** 2))
+        #         if mag[i + 1, j + 1] < threshold:
+        #             mag[i + 1, j + 1] = 0
+        # processed_image = mag.astype(np.uint8)
+        # res = cv2.cvtColor(processed_image, cv2.COLOR_GRAY2BGR)
+        return efficient
 
     def get_boxes_detection(self, name, prediction, model):
         """
@@ -224,7 +248,6 @@ class Service:
         """
         for index, box in enumerate(self.get_boxes(prediction)):
             if model.model.names[int(prediction[0].boxes.cls.cpu()[index])] == name:
-                # print(box)
                 return (int(box[2]) + int(box[0])) / 2, (int(box[3]) + int(box[1])) / 2
         return None, None
 
@@ -239,8 +262,7 @@ class Service:
             Returns:
                 Последовательность координат объектов, если все объекты были распознаны, иначе None.
         """
-        prediction = model.predict(captcha)
-        return prediction
+        return model.predict(captcha)
 
     def predict_one_sample(self, model, inputs):
         """
@@ -254,8 +276,6 @@ class Service:
                 Вероятности предсказанных классов.
         """
         with torch.no_grad():
-            inputs = inputs
-            model.eval()
             logit = model(inputs).cpu()
             probs = torch.nn.functional.softmax(logit, dim=-1).numpy()
         return probs
@@ -270,72 +290,9 @@ class Service:
             Returns:
                 Признак объекта, изображенного на капче.
         """
-        # Список всех возможных признаков
-        your_classes = [
-            "arrow",
-            "book",
-            "bucket",
-            "clock",
-            "cloud",
-            "compass",
-            "electro",
-            "eye",
-            "face",
-            "factory",
-            "fire",
-            "flag",
-            "hand",
-            "heart",
-            "house",
-            "key",
-            "keyboard",
-            "light",
-            "lightning",
-            "lock",
-            "magnifier",
-            "mail",
-            "microphone",
-            "monitor",
-            "paper",
-            "paperclip",
-            "pen",
-            "person",
-            "photo",
-            "pill",
-            "scissors",
-            "shop_cart",
-            "sound",
-            "star",
-            "store_cart",
-            "t-shirt",
-            "ticket",
-            "traffic_light",
-            "umbrella",
-            "water",
-            "wrench",
-        ]
-        label_encoder = LabelEncoder()
-        label_encoder.fit(your_classes)
-
-        alexnet = AlexNet()
-        alexnet.load_state_dict(torch.load("captcha_resolver/AI_weights/smartsolver_weights_1_6.pth", 
-                                           map_location="cpu",))
-        alexnet.eval()
-
-        model = alexnet
-
-        preprocess = transforms.Compose(
-            [
-                transforms.ToPILImage(),
-                transforms.Resize((227, 227)),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ]
-        )
         input_tensor = preprocess(image_input).unsqueeze(0)
-        probs = self.predict_one_sample(model, input_tensor)
-        predicted_class_idx = np.argmax(probs, axis=1)[0]
-        return your_classes[predicted_class_idx]
+        res = your_classes[np.argmax(self.predict_one_sample(alexnet, input_tensor), axis=1)[0]]
+        return res
 
     def put_object_to_s3(self, new_object, content):
         """
@@ -411,13 +368,12 @@ class Service:
         """
         copy = captcha.copy()
         sequence = []
-        index = 1
         model = segmentation_model
         prediction = self.detect_v2(captcha, model)
-        for icon in icons:
+        for index, icon in enumerate(icons):
+            index += 1
             name = self.classify_image(icon)
             x, y = self.get_boxes_detection(name, prediction, model)
-
             if x is not None and x != "not":
                 cv2.circle(copy, (int(x), int(y)), 2, (0, 0, 255), 4)
                 cv2.putText(
@@ -428,9 +384,7 @@ class Service:
                     0.7,
                     (0, 0, 255),
                     2,)
-
             sequence.append({"x": x, "y": y})
-            index += 1
         return sequence
 
     def get_captcha_solve_sequence_hybrid_merge_business(self, request: RequestBusiness):
@@ -457,19 +411,39 @@ class Service:
 
             Функция использует библиотеки `numpy` и `opencv-python` для обработки изображений и детектора Собеля.
         """
+        import time
+        a = [time.time()]
+        b = []
         captcha = b64_decode(request.screenshot_captcha)
+        a.append(time.time())
+        b.append("b64")
         icons = preprocess_captcha_sobel(icons=b64_decode(request.screenshot_icons))
-        sequence = []
-        model = detection_model
+        a.append(time.time())
+        b.append("preprocess")
         filtered_captcha = self.sobel_filter(request.filter, captcha)
-        prediction = self.detect_v2(filtered_captcha, model)
-        with ThreadPoolExecutor() as executor:
-            # Запускаем все предсказания в отдельных потоках и собираем результаты
-            result_xs_ys = list(executor.map(lambda icon: self.get_boxes_detection(self.classify_image(icon), prediction, model), icons))
-            sequence = [{"x": i[0], "y": i[1]} for i in result_xs_ys]
+        a.append(time.time())
+        b.append("sobel")
+        prediction = self.detect_v2(filtered_captcha, detection_model)
+        a.append(time.time())
+        b.append("detection")
+        result_xs_ys = []
+        for num, icon in enumerate(icons):
+            to_box = self.classify_image(icon)
+            a.append(time.time())
+            b.append("classification " + str(num+1))
+            result_xs_ys.append(self.get_boxes_detection(to_box, prediction, detection_model))
+            a.append(time.time())
+            b.append("get_boxes_detection " + str(num+1))
+        # result_xs_ys = [self.get_boxes_detection(self.classify_image(icon),
+        #                                          prediction,
+        #                                          detection_model) for icon in icons]
+        sequence = [{"x": i[0], "y": i[1]} for i in result_xs_ys]
         if any(i.get('x', False) is None for i in sequence):
             segment = self.get_captcha_solve_sequence_segmentation_sobel(captcha, icons)
             sequence, error = self.merge(sequence, segment)
+        for i in range(len(b)):
+            print(f"{b[i]}: {a[i+1] - a[i]:.2f}")
+        print(f"Total time: {a[-1] - a[0]:.2f}")
         return sequence
 
     async def get_captcha_solve_sequence_hybrid_merge_business_async(self, request: RequestBusiness):
@@ -483,9 +457,10 @@ class Service:
                 Последовательность действий для решения капчи.
         """
         loop = asyncio.get_event_loop()
-        # run_in_executor позволяет выполнить синхронную функцию асинхронно, возвращая Future
-        # None в качестве первого аргумента означает использование стандартного пула исполнителей (executor)
-        final_sequence = await loop.run_in_executor(None, self.get_captcha_solve_sequence_hybrid_merge_business, request)
+        with ThreadPoolExecutor() as pool:
+            final_sequence = await loop.run_in_executor(pool,
+                                                        self.get_captcha_solve_sequence_hybrid_merge_business,
+                                                        request)
         return final_sequence
 
     def merge(self, sequence: [dict], segment: [dict]):
