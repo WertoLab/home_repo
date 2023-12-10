@@ -11,5 +11,5 @@ COPY . /captcha_solver_app
 
 EXPOSE 5000
 
-CMD gunicorn main:app -w=2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:5000 --timeout=600
+CMD gunicorn main:app -w=1 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:5000 --timeout=600
 #CMD [ "gunicorn", "--bind", "0.0.0.0:8000", "main:app" ]
