@@ -1,6 +1,8 @@
+import torch
 from ultralytics import YOLO
 
 from captcha_resolver.yolov8 import YOLOv8
+from captcha_resolver.AI_models.ClassificationModel import AlexNet
 
 
 def init_models():
@@ -30,5 +32,8 @@ def init_models():
     detection.training = False
     segmentation_onnx = YOLOv8("captcha_resolver/AI_weights/captcha_segmentation.onnx")
     detection_onnx = YOLOv8("captcha_resolver/AI_weights/best_v3.onnx")
+    alexnet = AlexNet()
+    alexnet.load_state_dict(torch.load("captcha_resolver/AI_weights/smartsolver_weights_1_6.pth", map_location="cpu"))
+    alexnet.eval()
     print("Models inited")
-    return segmentation, detection, segmentation_onnx, detection_onnx
+    return segmentation, detection, segmentation_onnx, detection_onnx, alexnet
