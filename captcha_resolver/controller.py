@@ -24,7 +24,7 @@ def init_routes(app, service):
     async def get_captcha_solve_sequence_business(request: Request):
         print("Doing captcha1 solve")
         rio = RequestBusiness.fromJson(await request.json())
-        sequence = await service.get_captcha_solve_sequence_hybrid_merge_business_async(request=rio)
+        sequence = service.get_captcha_solve_sequence_hybrid_merge_business(request=rio)
         # if error:
         #     return Response(content=json.dumps({"status": 0, "request": "ERROR_CAPTCHA_UNSOLVABLE"}),
         #                     media_type="application/json")
