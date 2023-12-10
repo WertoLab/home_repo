@@ -1,27 +1,12 @@
-from captcha_resolver.controller import init_routes
-from captcha_resolver.service import Service
-from gunicorn.app.base import BaseApplication
 from fastapi import FastAPI
 
+from captcha_resolver.service import Service
+from captcha_resolver.controller import init_routes
+
 app = FastAPI()
-
 service = Service()
+
 init_routes(app, service)
-
-
-class GunicornApp(BaseApplication):
-    def __init__(self, app, options=None):
-        self.options = options or {}
-        self.application = app
-        super().__init__()
-
-    def load_config(self):
-        config = {key: value for key, value in self.options.items() if key in self.cfg.settings and value is not None}
-        for key, value in config.items():
-            self.cfg.set(key.lower(), value)
-
-    def load(self):
-        return self.application
 
 '''
 if __name__ == '__main__':
